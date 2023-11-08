@@ -85,7 +85,8 @@ def draw_grid(dimension, color="black"):
             y1 = i * SQUARE_SIZE
             x2 = x1 + SQUARE_SIZE
             y2 = y1 + SQUARE_SIZE
-            rectangle = canvas.create_rectangle(x1, y1, x2, y2, fill="white", outline=color)
+            rectangle = canvas.create_rectangle(x1, y1, x2, y2, 
+                                                fill="white", outline=color)
             rectangles.append(rectangle)
 
     return rectangles
@@ -124,7 +125,8 @@ def move_circle(canvas, item_id, new_x, new_y):
     current_center_x = (x1 + x2) / 2
     current_center_y = (y1 + y2) / 2
     
-    # Calculate the distance to move the circle to place its center at (new_x, new_y)
+    # Calculate the distance to move the circle to place its center 
+    # at (new_x, new_y)
     dx = new_x - current_center_x
     dy = new_y - current_center_y
     
@@ -366,7 +368,9 @@ class Board:
         for row in range(dimension):
             for column in range(dimension):
                 square = Square(Location(row, column))
-                square.capacity = len(get_neighboring_locations(dimension, Location(row, column)))
+                location = Location(row, column)
+                neighboring_locations = get_neighboring_locations(dimension, location)
+                square.capacity = len(neighboring_locations)
                 self.squares.append(square)
 
     # -------------------------------------------------------------------------
@@ -641,7 +645,9 @@ class Game:
         tk.Label(message_window, text=message, padx=20, pady=10).pack()
         
         # Add an OK button that closes the message window    
-        tk.Button(message_window, text="OK", command=lambda: [message_window.destroy(), self.reset_game()], padx=20, pady=5).pack()
+        tk.Button(message_window, text="OK", 
+                  command=lambda: [message_window.destroy(), self.reset_game()], 
+                  padx=20, pady=5).pack()
 
     # -----------------------------------------------------------------------------
     # Method: reset_game
@@ -670,19 +676,21 @@ class Game:
         # when the game is transitioning between moves.
         if turn is None:
             for square in self.board.squares:
-                canvas.itemconfig(self.board.rectangles[square.location.row * self.board.dimension + square.location.column], fill="white")
+                rectangle_index = square.location.row * self.board.dimension + square.location.column
+                canvas.itemconfig(self.board.rectangles[rectangle_index], fill="white")
             return
         
         # Get the empty squares and the squares that have beetles of the current turn's color.
         valid_squares = self.board.get_empty_squares() + self.board.get_squares_by_color(turn)
 
         for square in self.board.squares:
+            rectangle_index = square.location.row * self.board.dimension + square.location.column
 
             # Check if the square at the specified location is is part of the valid squares.
             if square in valid_squares:
-                canvas.itemconfig(self.board.rectangles[square.location.row * self.board.dimension + square.location.column], fill="white")
+                canvas.itemconfig(self.board.rectangles[rectangle_index], fill="white")
             else:
-                canvas.itemconfig(self.board.rectangles[square.location.row * self.board.dimension + square.location.column], fill="light gray")
+                canvas.itemconfig(self.board.rectangles[rectangle_index], fill="light gray")
 
 # =============================================================================
 # Data manipulation functions
