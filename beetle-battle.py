@@ -35,8 +35,10 @@ root   = None
 # -----------------------------------------------------------------------------
 def create_main_window():
     
-    root = tk.Tk()
-    root.title("Beetle Battle")
+    global root
+    if root is None:
+        root = tk.Tk()
+        root.title("Beetle Battle")
 
     # Create the menu
     menubar = tk.Menu(root)
@@ -52,10 +54,10 @@ def create_main_window():
 
     # Create the "Board" menu with "3x3", "4x4", "5x5", and "10x10" items.
     board_menu = tk.Menu(menubar, tearoff=0)
-    board_menu.add_command(label="3x3",   command=lambda: [root.destroy(), main(3)])
-    board_menu.add_command(label="4x4",   command=lambda: [root.destroy(), main(4)])
-    board_menu.add_command(label="5x5",   command=lambda: [root.destroy(), main(5)])
-    board_menu.add_command(label="10x10", command=lambda: [root.destroy(), main(10)])
+    board_menu.add_command(label="3x3",   command=lambda: [main(3)])
+    board_menu.add_command(label="4x4",   command=lambda: [main(4)])
+    board_menu.add_command(label="5x5",   command=lambda: [main(5)])
+    board_menu.add_command(label="10x10", command=lambda: [main(10)])
 
     # Add the "Board" menu to the menu bar
     menubar.add_cascade(label="Board", menu=board_menu)
@@ -72,13 +74,14 @@ def reset_command():
     global game
     game.reset_game()
 
-
-
 # -----------------------------------------------------------------------------
 # Function: init_canvas
 # This function initializes and returns a canvas.
 # -----------------------------------------------------------------------------
 def init_canvas(dimension):
+    global canvas
+    if canvas is not None:
+        canvas.destroy()
 
     canvas = tk.Canvas(root, width=dimension * SQUARE_SIZE, height=dimension * SQUARE_SIZE)
     canvas.pack()
