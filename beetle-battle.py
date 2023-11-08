@@ -39,6 +39,7 @@ def create_main_window():
     if root is None:
         root = tk.Tk()
         root.title("Beetle Battle")
+        root.resizable(False, False)
 
     # Create the menu
     menubar = tk.Menu(root)
