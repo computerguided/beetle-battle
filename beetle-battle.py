@@ -8,7 +8,10 @@
 # Imports
 # =============================================================================
 import tkinter as tk
-import sys
+import os
+import csv
+from tkinter import filedialog
+import datetime
 
 # =============================================================================
 # Constants
@@ -40,7 +43,7 @@ def create_main_window():
 
     # Create the File menu with "New game" and "Exit" items
     game_menu = tk.Menu(menubar, tearoff=0)
-    game_menu.add_command(label="New Game", command=lambda: [game.reset_game()])
+    game_menu.add_command(label="New Game", command=reset_command)
     game_menu.add_separator()
     game_menu.add_command(label="Exit", command=root.destroy)
 
@@ -61,6 +64,15 @@ def create_main_window():
     root.config(menu=menubar)
 
     return root
+
+# -----------------------------------------------------------------------------
+# Commands
+# -----------------------------------------------------------------------------
+def reset_command():
+    global game
+    game.reset_game()
+
+
 
 # -----------------------------------------------------------------------------
 # Function: init_canvas
@@ -108,7 +120,8 @@ def draw_circle(canvas, square, beetle):
     circle = canvas.create_oval(
         x - radius, y - radius,
         x + radius, y + radius,
-        fill=color
+        fill=color,
+        outline="black"
     )
     beetle.circle = circle
 
@@ -439,7 +452,7 @@ class Game:
     board = None
     beetles_to_jump = []
     turn = None
-    moveCount = 0
+    moves = []
 
     # -------------------------------------------------------------------------
     # Constructor
@@ -454,7 +467,7 @@ class Game:
 
         self.beetles_to_jump = []
         self.turn = "red"
-        self.moveCount = 0
+        self.moves = []
 
         # Enable the canvas click.
         canvas.bind("<Button-1>", on_canvas_click)
@@ -498,7 +511,7 @@ class Game:
         self.board.place_new_beetle(color, location)
         square = self.board.get_square_by_location(location)
         self.evaluate_square(square)
-        self.moveCount += 1
+        self.moves.append((color, location))
 
         self.transition()
         
@@ -603,7 +616,7 @@ class Game:
     def get_winner(self):
 
         # There can only be a winner from move 3 onwards.
-        if self.moveCount < 3:
+        if len(self.moves) < 3:
             return None
         
         # Get the red squares and blue squares.
@@ -643,11 +656,23 @@ class Game:
         
         # Add a label with the message
         tk.Label(message_window, text=message, padx=20, pady=10).pack()
-        
+
+        # Create a frame to contain the buttons
+        button_frame = tk.Frame(message_window)
+        button_frame.pack(pady=10)
+
         # Add an OK button that closes the message window    
-        tk.Button(message_window, text="OK", 
-                  command=lambda: [message_window.destroy(), self.reset_game()], 
-                  padx=20, pady=5).pack()
+        tk.Button(button_frame, text="OK", 
+                command=lambda: [message_window.destroy(), self.reset_game()], 
+                padx=20, pady=5).pack(side=tk.LEFT)
+
+        # Add a "Download moves" button, assuming you have a method self.download_moves
+        tk.Button(button_frame, text="Download moves", 
+                command=lambda: [self.download_moves(message_window)], 
+                padx=20, pady=5).pack(side=tk.LEFT)
+        
+        # Capture the window close (X) button click as well
+        message_window.protocol("WM_DELETE_WINDOW", lambda: [message_window.destroy(), self.reset_game()])
 
     # -----------------------------------------------------------------------------
     # Method: reset_game
@@ -663,6 +688,48 @@ class Game:
 
         # Set the title of the window to indicate the turn.
         set_window_title(self.turn)
+
+    # -----------------------------------------------------------------------------
+    # Method: download_moves
+    # This method downloads the moves to a CSV file.
+    # The format is as follows:
+    #   move_number, color, row, column
+    # -----------------------------------------------------------------------------
+    def download_moves(self, calling_window):
+
+        # Create a CSV string from the moves.
+        csv_data = [("move_number", "color", "row", "column")]  # Start with the header
+        for index, move in enumerate(self.moves):
+            csv_data.append((index + 1, move[0], move[1].row, move[1].column))
+
+        # Format the current date and time as yyyymmddhhmm
+        current_time = datetime.datetime.now()
+        default_filename = "beetle-battle " + current_time.strftime("%Y-%m-%d-%H-%M")
+
+        # Get the directory where the current script is located
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+
+        # Ask the user for a location and name for the CSV file
+        file_path = filedialog.asksaveasfilename(
+            defaultextension='.csv',
+            filetypes=[("CSV files", "*.csv")],
+            title="Save moves as CSV",
+            initialdir=script_dir, # Set the initial directory
+            initialfile=default_filename  # Set the default file name
+        )
+
+        # If the user doesn't cancel, then save the file
+        if file_path:
+            with open(file_path, 'w', newline='', encoding='utf-8') as file:
+                # Write the board dimension as metadata at the top
+                file.write(f"dimension: {game.board.dimension}\n")
+                file.write(f"winner: {game.get_winner()}\n\n")
+
+                writer = csv.writer(file)
+                writer.writerows(csv_data)  # Write the data rows
+
+        # return the focus to the calling window
+        calling_window.focus_force()
 
     # -----------------------------------------------------------------------------
     # Method: set_color_of_squares
@@ -769,12 +836,6 @@ def main(dimension):
 # Run the main program and use the argument as the dimension of the board.
 # -----------------------------------------------------------------------------
 if __name__ == "__main__":
-
-    # Get the argument from the command line. If it is not supplied, then use 5.
-    if len(sys.argv) > 1:
-        dimension = int(sys.argv[1])
-    else:
-        dimension = 5
-    main(dimension)
+    main(5)
 
 # =============================================================================
