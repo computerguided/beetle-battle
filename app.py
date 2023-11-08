@@ -17,24 +17,55 @@ SQUARE_SIZE = 100  # Size of the squares in pixels
 # Global variables
 # =============================================================================
 canvas = None
-game = None
+game   = None
+root   = None
 
 # =============================================================================
 # GUI
 # =============================================================================
 
-# Create the main window
-root = tk.Tk()
-root.title("Beetle Battle")
+# -----------------------------------------------------------------------------
+# Function: create_main_window
+# This function creates a main window and its menu and returns it.
+# -----------------------------------------------------------------------------
+def create_main_window():
+    root = tk.Tk()
+    root.title("Beetle Battle")
+
+    # Create the menu
+    menubar = tk.Menu(root)
+
+    # Create the File menu with "New game" and "Exit" items
+    game_menu = tk.Menu(menubar, tearoff=0)
+    game_menu.add_command(label="New Game", command=lambda: [game.reset_game()])
+    game_menu.add_separator()
+    game_menu.add_command(label="Exit", command=root.destroy)
+
+    # Add the File menu to the menu bar
+    menubar.add_cascade(label="Game", menu=game_menu)
+
+    # Create the "Board" menu with "3x3", "4x4", "5x5", and "10x10" items.
+    board_menu = tk.Menu(menubar, tearoff=0)
+    board_menu.add_command(label="3x3",   command=lambda: [root.destroy(), main(3)])
+    board_menu.add_command(label="4x4",   command=lambda: [root.destroy(), main(4)])
+    board_menu.add_command(label="5x5",   command=lambda: [root.destroy(), main(5)])
+    board_menu.add_command(label="10x10", command=lambda: [root.destroy(), main(10)])
+
+    # Add the "Board" menu to the menu bar
+    menubar.add_cascade(label="Board", menu=board_menu)
+
+    # Add the menu bar to the root window
+    root.config(menu=menubar)
+
+    return root
 
 # -----------------------------------------------------------------------------
 # Function: init_canvas
-# This function initializes the canvas.
+# This function initializes and returns a canvas.
 # -----------------------------------------------------------------------------
 def init_canvas(dimension):
     canvas = tk.Canvas(root, width=dimension * SQUARE_SIZE, height=dimension * SQUARE_SIZE)
     canvas.pack()
-    canvas.bind("<Button-1>", on_canvas_click)
     return canvas
 
 # -----------------------------------------------------------------------------
@@ -42,17 +73,22 @@ def init_canvas(dimension):
 # This function draws the grid.
 # -----------------------------------------------------------------------------
 def draw_grid(dimension, color="black"):
+    rectangles = []
     for i in range(dimension):
         for j in range(dimension):
             x1 = j * SQUARE_SIZE
             y1 = i * SQUARE_SIZE
             x2 = x1 + SQUARE_SIZE
             y2 = y1 + SQUARE_SIZE
-            canvas.create_rectangle(x1, y1, x2, y2, fill="white", outline=color)
+            rectangle = canvas.create_rectangle(x1, y1, x2, y2, fill="white", outline=color)
+            rectangles.append(rectangle)
+
+    return rectangles
 
 # -----------------------------------------------------------------------------
 # Function: draw_circle
-# This function draws a circle.
+# This function draws a circle on the square and saves the circle in the 
+# beetle object for later use.
 # -----------------------------------------------------------------------------
 def draw_circle(canvas, square, beetle):
     color = beetle.color
@@ -87,7 +123,6 @@ def move_circle(canvas, item_id, new_x, new_y):
     
     # Move the circle by the calculated distance
     canvas.move(item_id, dx, dy)
-    canvas.update()
 
 # -----------------------------------------------------------------------------
 # Function: change_circle_color
@@ -95,7 +130,6 @@ def move_circle(canvas, item_id, new_x, new_y):
 # -----------------------------------------------------------------------------
 def change_circle_color(canvas, item_id, new_color):
     canvas.itemconfig(item_id, fill=new_color)
-    canvas.update()
 
 # -----------------------------------------------------------------------------
 # Function: on_canvas_click
@@ -106,7 +140,29 @@ def on_canvas_click(event):
     col = event.x // SQUARE_SIZE
     row = event.y // SQUARE_SIZE
     if game.check_move(Location(row, col)):
+        # Disable the canvas while the beetles are jumping.
+        canvas.unbind("<Button-1>")
+
+        # Set all squares to white.
+        game.set_squares_color()
+
         game.do_move(game.turn, Location(row, col))
+
+        # Check if there is a winner.
+        winner = game.get_winner()
+        if winner is not None:
+            set_window_title()
+            game.announce_winner(winner)
+            return
+        
+        # Set the title of the window to indicate the turn.
+        set_window_title(game.turn)
+        
+        # Enable the canvas again.
+        canvas.bind("<Button-1>", on_canvas_click)
+
+        # Set the squares to the valid moves for the current turn.
+        game.set_squares_color(game.turn)
     
 # -----------------------------------------------------------------------------
 # Function: center_window
@@ -123,6 +179,17 @@ def center_window(window, width=300, height=200):
     
     # Set the geometry of the toplevel
     window.geometry(f'{width}x{height}+{x}+{y}')
+
+# -----------------------------------------------------------------------------
+# Function: set_window_title
+# This function sets the title of the window indicating the turn.
+# -----------------------------------------------------------------------------
+def set_window_title(turn = None):
+    if turn is None:
+        root.title("Beetle Battle")
+        return
+    
+    root.title("Beetle Battle - " + turn + "'s turn")
 
 # =============================================================================
 # Classes
@@ -193,7 +260,6 @@ class Square:
         for beetle in self.beetles:
             beetle.set_color(new_beetle.color)
         self.set_internal_positions()
-        canvas.update()
 
     # -------------------------------------------------------------------------
     # Method: remove_beetle
@@ -202,7 +268,6 @@ class Square:
     def remove_beetle(self, beetle):
         self.beetles.remove(beetle)
         self.set_internal_positions()
-        canvas.update()
 
     # -------------------------------------------------------------------------
     # Method: set_internal_positions
@@ -238,6 +303,8 @@ class Square:
         for i in range(count):
             x, y = circle_positions[i]
             move_circle(canvas, self.beetles[i].circle, x, y)
+        
+        canvas.update()
 
     # -------------------------------------------------------------------------
     # Method: check_jumping_beetles
@@ -259,6 +326,7 @@ class Square:
 class Board:
     dimension = 0
     squares = []
+    rectangles = []
 
     # -------------------------------------------------------------------------
     # Constructor
@@ -344,9 +412,16 @@ class Game:
     # -------------------------------------------------------------------------
     def __init__(self, dimension):
         self.board = Board(dimension)
+
+        # Draw the grid
+        self.board.rectangles = draw_grid(self.board.dimension)
+
         self.beetles_to_jump = []
         self.turn = "red"
         self.moveCount = 0
+
+        # Enable the canvas click.
+        canvas.bind("<Button-1>", on_canvas_click)
 
     # -------------------------------------------------------------------------
     # Method: check_move
@@ -386,6 +461,7 @@ class Game:
         square = self.board.get_square_by_location(location)
         self.evaluate_square(square)
         self.moveCount += 1
+
         self.transition()
         
         if self.turn == "red":
@@ -425,9 +501,6 @@ class Game:
     def transition(self):
         skipped_beetle_jumps = 0
         game_over = self.get_winner() is not None
-        
-        # Disable the canvas while the beetles are jumping.
-        canvas.unbind("<Button-1>")
 
         # Loop through the list of beetles that are about to jump until there
         # are no beetles left or until there is a winner.
@@ -456,15 +529,7 @@ class Game:
                 skipped_beetle_jumps += 1
 
             # If there is a winner, then the game is over.
-            if not game_over:
-                winner = self.get_winner()
-                if winner is not None:
-                    game_over = True
-                    # Display a message box with the winner.
-                    self.announce_winner(winner)
-
-        # Enable the canvas again.
-        canvas.bind("<Button-1>", on_canvas_click)
+            game_over = self.get_winner() is not None
 
     # -------------------------------------------------------------------------
     # Method: make_beetle_jump
@@ -472,14 +537,21 @@ class Game:
     # to the destination.
     # -------------------------------------------------------------------------
     def make_beetle_jump(self, beetle):
+
+        # The beetle is no longer about to jump.
         self.beetles_to_jump.remove(beetle)
         current_square = self.board.get_square_by_location(beetle.location)
         destination_square = self.board.get_square_by_location(beetle.destination)
-        current_square.remove_beetle(beetle)
+
+        # For visualization: first move the beetle to the destination square and 
+        # then remove it from the current square.
+
         beetle.jump()
         destination_square.add_beetle(beetle)
-        self.evaluate_square(destination_square)            
+        self.evaluate_square(destination_square) 
 
+        current_square.remove_beetle(beetle)
+           
     # -------------------------------------------------------------------------
     # Method: get_winner
     # This method checks if there is a winner, which can only be the case from
@@ -538,10 +610,39 @@ class Game:
     def reset_game(self):
         # Clear the canvas
         canvas.delete("all")
-        # Draw the grid
-        draw_grid(self.board.dimension)
+
         # Create a new game with the specified dimension
         self.__init__(self.board.dimension)
+
+        # Set the title of the window to indicate the turn.
+        set_window_title(self.turn)
+
+    # -----------------------------------------------------------------------------
+    # Method: set_squares_color
+    # This method sets the valid moves for the current turn. It does this by making
+    # the squares on which the player cannot make a move light gray.
+    # -----------------------------------------------------------------------------
+    def set_squares_color(self, turn=None):
+
+        # If the turn is not specified, then set all squares to white.
+        if turn is None:
+            for square in self.board.squares:
+                canvas.itemconfig(self.board.rectangles[square.location.row * self.board.dimension + square.location.column], fill="white")
+            return
+        
+        # Get the empty squares.
+        valid_squares = self.board.get_empty_squares()
+
+        # Add the squares that have beetles of the current turn's color.
+        valid_squares.extend(self.board.get_squares_by_color(turn))
+
+        for square in self.board.squares:
+
+            # Check if the square at the specified location is is part of the valid squares.
+            if square in valid_squares:
+                canvas.itemconfig(self.board.rectangles[square.location.row * self.board.dimension + square.location.column], fill="white")
+            else:
+                canvas.itemconfig(self.board.rectangles[square.location.row * self.board.dimension + square.location.column], fill="light gray")
 
 # =============================================================================
 # Data manipulation functions
@@ -599,20 +700,22 @@ def filter_patially_filled_squares(squares):
 # -----------------------------------------------------------------------------
 def main(dimension):
 
+    global root
+    root = create_main_window()
+
     # Initialize the canvas.
     global canvas
     canvas = init_canvas(dimension)
 
-    # Create a label for displaying who's turn it is
-    turn_label = tk.Label(root, text="Red's Turn", font=("Helvetica", 16))
-    turn_label.pack(side="bottom")  # Places the label below the canvas
-
-    # Draw the grid.
-    draw_grid(dimension)
-
     # Create a new game with the specified dimension.
     global game
     game = Game(dimension)
+
+    # Set the title of the window to indicate the turn.
+    set_window_title(game.turn)
+
+    # Draw the grid.
+    game.board.rectangles = draw_grid(dimension)
 
     # Calculate the appropriate window size
     window_width = dimension * SQUARE_SIZE
@@ -628,6 +731,7 @@ def main(dimension):
 # Run the main program and use the argument as the dimension of the board.
 # -----------------------------------------------------------------------------
 if __name__ == "__main__":
+
     # Get the argument from the command line. If it is not supplied, then use 5.
     if len(sys.argv) > 1:
         dimension = int(sys.argv[1])
