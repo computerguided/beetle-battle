@@ -1,5 +1,7 @@
 # =============================================================================
 # Beetle Battle
+# By Fred Dijkstra
+# (c) 2023 - Computerguided Systems B.V.
 # =============================================================================
 
 # =============================================================================
@@ -29,6 +31,7 @@ root   = None
 # This function creates a main window and its menu and returns it.
 # -----------------------------------------------------------------------------
 def create_main_window():
+    
     root = tk.Tk()
     root.title("Beetle Battle")
 
@@ -64,6 +67,7 @@ def create_main_window():
 # This function initializes and returns a canvas.
 # -----------------------------------------------------------------------------
 def init_canvas(dimension):
+
     canvas = tk.Canvas(root, width=dimension * SQUARE_SIZE, height=dimension * SQUARE_SIZE)
     canvas.pack()
     return canvas
@@ -73,6 +77,7 @@ def init_canvas(dimension):
 # This function draws the grid.
 # -----------------------------------------------------------------------------
 def draw_grid(dimension, color="black"):
+
     rectangles = []
     for i in range(dimension):
         for j in range(dimension):
@@ -91,6 +96,7 @@ def draw_grid(dimension, color="black"):
 # beetle object for later use.
 # -----------------------------------------------------------------------------
 def draw_circle(canvas, square, beetle):
+
     color = beetle.color
     row = square.location.row
     column = square.location.column
@@ -110,6 +116,7 @@ def draw_circle(canvas, square, beetle):
 # This function moves a circle to a new location.
 # -----------------------------------------------------------------------------
 def move_circle(canvas, item_id, new_x, new_y):
+
     # Get the current coordinates of the circle's bounding box
     x1, y1, x2, y2 = canvas.coords(item_id)
     
@@ -129,6 +136,7 @@ def move_circle(canvas, item_id, new_x, new_y):
 # This function changes the color of a circle.
 # -----------------------------------------------------------------------------
 def change_circle_color(canvas, item_id, new_color):
+
     canvas.itemconfig(item_id, fill=new_color)
 
 # -----------------------------------------------------------------------------
@@ -136,6 +144,7 @@ def change_circle_color(canvas, item_id, new_color):
 # This function is called when the canvas is clicked on a certain square.
 # -----------------------------------------------------------------------------
 def on_canvas_click(event):
+
     # Calculate the row and column number
     col = event.x // SQUARE_SIZE
     row = event.y // SQUARE_SIZE
@@ -169,6 +178,7 @@ def on_canvas_click(event):
 # This function centers a window on the screen.
 # -----------------------------------------------------------------------------
 def center_window(window, width=300, height=200):
+
     # Get the screen width and height
     screen_width = window.winfo_screenwidth()
     screen_height = window.winfo_screenheight()
@@ -185,6 +195,7 @@ def center_window(window, width=300, height=200):
 # This function sets the title of the window indicating the turn.
 # -----------------------------------------------------------------------------
 def set_window_title(turn = None):
+
     if turn is None:
         root.title("Beetle Battle")
         return
@@ -204,6 +215,7 @@ class Location:
     column = 0
 
     def __init__(self, row, column):
+
         self.row = row
         self.column = column
 
@@ -220,21 +232,25 @@ class Beetle:
 
     # -------------------------------------------------------------------------
     def __init__(self, color, location):
+
         self.color = color
         self.location = location
         self.destination = None
 
     # -------------------------------------------------------------------------
     def prepare_jump(self, destination):
+
         self.destination = destination
 
     # -------------------------------------------------------------------------
     def jump(self):
+
         self.location = self.destination
         self.destination = None
 
     # -------------------------------------------------------------------------
     def set_color(self, color):
+
         self.color = color
         change_circle_color(canvas, self.circle, color)
 
@@ -251,6 +267,7 @@ class Square:
     beetles = []
 
     def __init__(self, location):
+
         self.location = location
         self.beetles = []
 
@@ -260,6 +277,7 @@ class Square:
     # beetles in the square is set by the color of the beetle that is added.
     # -------------------------------------------------------------------------
     def add_beetle(self, new_beetle):
+
         self.beetles.append(new_beetle)
         for beetle in self.beetles:
             beetle.set_color(new_beetle.color)
@@ -270,6 +288,7 @@ class Square:
     # This method takes a beetle and removes it from the square.
     # -------------------------------------------------------------------------
     def remove_beetle(self, beetle):
+
         self.beetles.remove(beetle)
         self.set_internal_positions()
 
@@ -279,6 +298,7 @@ class Square:
     # based on the number of beetles in the square.
     # -------------------------------------------------------------------------
     def set_internal_positions(self):
+
         # Define the center of the square
         center_x = (self.location.column * SQUARE_SIZE) + (SQUARE_SIZE // 2)
         center_y = (self.location.row * SQUARE_SIZE) + (SQUARE_SIZE // 2)
@@ -316,6 +336,7 @@ class Square:
     # jumping.
     # -------------------------------------------------------------------------
     def check_jumping_beetles(self):
+
         for beetle in self.beetles:
             if beetle.destination is not None:
                 return True
@@ -339,6 +360,7 @@ class Board:
     # squares.
     # -------------------------------------------------------------------------
     def __init__(self, dimension):
+
         self.dimension = dimension
         self.squares = []
         for row in range(dimension):
@@ -352,6 +374,7 @@ class Board:
     # This method takes a location and returns the square at that location.
     # -------------------------------------------------------------------------
     def get_square_by_location(self, location):
+
         return self.squares[location.row * self.dimension + location.column]
     
     # -------------------------------------------------------------------------
@@ -359,6 +382,7 @@ class Board:
     # This method returns the list of squares that have no beetles.
     # -------------------------------------------------------------------------
     def get_empty_squares(self):
+
         empty_squares = []
         for square in self.squares:
             if len(square.beetles) == 0:
@@ -371,6 +395,7 @@ class Board:
     # beetle of that color.
     # -------------------------------------------------------------------------
     def get_squares_by_color(self, color):
+
         squares = []
         for square in self.squares:
             for beetle in square.beetles:
@@ -385,6 +410,7 @@ class Board:
     # color at that location.
     # -------------------------------------------------------------------------
     def place_new_beetle(self, color, location):
+
         square = self.get_square_by_location(location)
         beetle = Beetle(color, location)
         draw_circle(canvas, square, beetle)
@@ -397,6 +423,7 @@ class Board:
     # the neighboring squares.
     # -------------------------------------------------------------------------
     def add_beetle(self, beetle, square):
+
         square.beetles.append(beetle)
         square.set_internal_positions()
 
@@ -415,6 +442,7 @@ class Game:
     # The constructor takes the dimension of the board and creates the board.
     # -------------------------------------------------------------------------
     def __init__(self, dimension):
+
         self.board = Board(dimension)
 
         # Draw the grid
@@ -462,6 +490,7 @@ class Game:
     # color at that location.
     # -------------------------------------------------------------------------
     def do_move(self, color, location):
+
         self.board.place_new_beetle(color, location)
         square = self.board.get_square_by_location(location)
         self.evaluate_square(square)
@@ -505,6 +534,7 @@ class Game:
     # to the destination square.
     # -------------------------------------------------------------------------
     def transition(self):
+
         skipped_beetle_jumps = 0
         game_over = self.get_winner() is not None
 
@@ -542,6 +572,7 @@ class Game:
     # to the destination.
     # -------------------------------------------------------------------------
     def make_beetle_jump(self, beetle):
+
         current_square = self.board.get_square_by_location(beetle.location)
         destination_square = self.board.get_square_by_location(beetle.destination)
 
@@ -591,6 +622,7 @@ class Game:
     # This method announces the winner by creating a modal message box.
     # -----------------------------------------------------------------------------
     def announce_winner(self, winner_name):
+
         message = "The winner is " + winner_name + "!"
 
         # Create a top-level window to act as the message box
@@ -663,6 +695,7 @@ class Game:
 # the list of neighboring locations.
 # -----------------------------------------------------------------------------
 def get_neighboring_locations(dimension, location):
+
     neighboring_locations = []
     row = location.row
     column = location.column
@@ -735,3 +768,5 @@ if __name__ == "__main__":
     else:
         dimension = 5
     main(dimension)
+
+# =============================================================================
