@@ -144,7 +144,7 @@ def on_canvas_click(event):
         canvas.unbind("<Button-1>")
 
         # Set all squares to white.
-        game.set_squares_color()
+        game.set_color_of_squares()
 
         game.do_move(game.turn, Location(row, col))
 
@@ -162,7 +162,7 @@ def on_canvas_click(event):
         canvas.bind("<Button-1>", on_canvas_click)
 
         # Set the squares to the valid moves for the current turn.
-        game.set_squares_color(game.turn)
+        game.set_color_of_squares(game.turn)
     
 # -----------------------------------------------------------------------------
 # Function: center_window
@@ -218,18 +218,22 @@ class Beetle:
     destination = None
     circle = None
 
+    # -------------------------------------------------------------------------
     def __init__(self, color, location):
         self.color = color
         self.location = location
         self.destination = None
 
+    # -------------------------------------------------------------------------
     def prepare_jump(self, destination):
         self.destination = destination
 
+    # -------------------------------------------------------------------------
     def jump(self):
         self.location = self.destination
         self.destination = None
 
+    # -------------------------------------------------------------------------
     def set_color(self, color):
         self.color = color
         change_circle_color(canvas, self.circle, color)
@@ -432,6 +436,7 @@ class Game:
 
         # Check if the game is over.
         if self.get_winner() is not None:
+            # No move is allowed if the game is over.
             return False
 
         # Get the square at the specified location.
@@ -439,12 +444,12 @@ class Game:
 
         # Get the empty squares.
         empty_squares = self.board.get_empty_squares()
+
         # Get the squares that have beetles of the current turn's color.
         squares_with_current_turn_color = self.board.get_squares_by_color(self.turn)
 
-        # Check if the square at the specified location is is part of the
-        # empty squares or the squares that have beetles of the current turn's.
-        # color.
+        # Check if the square at the specified location is is part of the empty 
+        # squares or the squares that have beetles of the current turn's color.
         if square in empty_squares or square in squares_with_current_turn_color:
             return True
         
@@ -475,6 +480,7 @@ class Game:
     # beetles on the square are prepared to jump to the neighboring squares.
     # -------------------------------------------------------------------------
     def evaluate_square(self, square):
+
         # Determine the number of not jumping beetles on the square.
         not_jumping_beetles = 0
         for beetle in square.beetles:
@@ -508,7 +514,6 @@ class Game:
 
             beetle = self.beetles_to_jump[skipped_beetle_jumps]
             destination = beetle.destination
-
             destination_square = self.board.get_square_by_location(destination)
 
             # If the destination square is not fully filled, 
@@ -525,7 +530,7 @@ class Game:
                 # If the destination square is fully filled, then the beetle
                 # cannot jump to the destination square. Therefore, the beetle
                 # has to wait until there is room. Therefore, the beetle
-                # is skipped and the next beetle is considered.
+                # is skipped for now and the next beetle is considered.
                 skipped_beetle_jumps += 1
 
             # If there is a winner, then the game is over.
@@ -537,20 +542,19 @@ class Game:
     # to the destination.
     # -------------------------------------------------------------------------
     def make_beetle_jump(self, beetle):
-
-        # The beetle is no longer about to jump.
-        self.beetles_to_jump.remove(beetle)
         current_square = self.board.get_square_by_location(beetle.location)
         destination_square = self.board.get_square_by_location(beetle.destination)
 
+        # The beetle is no longer about to jump so it is removed from the list.
+        self.beetles_to_jump.remove(beetle)
+
         # For visualization: first move the beetle to the destination square and 
         # then remove it from the current square.
-
         beetle.jump()
         destination_square.add_beetle(beetle)
-        self.evaluate_square(destination_square) 
-
         current_square.remove_beetle(beetle)
+
+        self.evaluate_square(destination_square)
            
     # -------------------------------------------------------------------------
     # Method: get_winner
@@ -567,20 +571,24 @@ class Game:
         if self.moveCount < 3:
             return None
         
-        # Check if there are any red squares left or any blue squares left.
+        # Get the red squares and blue squares.
         red_squares = self.board.get_squares_by_color("red")
         blue_squares = self.board.get_squares_by_color("blue")
 
         # If there are no red squares left, then blue wins.
         if len(red_squares) == 0:
             return "blue"
+        
         # If there are no blue squares left, then red wins.
-        elif len(blue_squares) == 0:
+        if len(blue_squares) == 0:
             return "red"
         
         # Otherwise, there is no winner.
         return None
     
+    # -----------------------------------------------------------------------------
+    # Method: announce_winner
+    # This method announces the winner by creating a modal message box.
     # -----------------------------------------------------------------------------
     def announce_winner(self, winner_name):
         message = "The winner is " + winner_name + "!"
@@ -608,6 +616,7 @@ class Game:
     # This method resets the game.
     # -----------------------------------------------------------------------------
     def reset_game(self):
+
         # Clear the canvas
         canvas.delete("all")
 
@@ -618,23 +627,22 @@ class Game:
         set_window_title(self.turn)
 
     # -----------------------------------------------------------------------------
-    # Method: set_squares_color
-    # This method sets the valid moves for the current turn. It does this by making
-    # the squares on which the player cannot make a move light gray.
+    # Method: set_color_of_squares
+    # This method sets the valid moves for the current turn. It does this by 
+    # temporarily changing the color of the square to light gray for those squares 
+    # on which the player cannot make a move.
     # -----------------------------------------------------------------------------
-    def set_squares_color(self, turn=None):
+    def set_color_of_squares(self, turn=None):
 
-        # If the turn is not specified, then set all squares to white.
+        # If the turn is not specified, then set all squares to white. This is used
+        # when the game is transitioning between moves.
         if turn is None:
             for square in self.board.squares:
                 canvas.itemconfig(self.board.rectangles[square.location.row * self.board.dimension + square.location.column], fill="white")
             return
         
-        # Get the empty squares.
-        valid_squares = self.board.get_empty_squares()
-
-        # Add the squares that have beetles of the current turn's color.
-        valid_squares.extend(self.board.get_squares_by_color(turn))
+        # Get the empty squares and the squares that have beetles of the current turn's color.
+        valid_squares = self.board.get_empty_squares() + self.board.get_squares_by_color(turn)
 
         for square in self.board.squares:
 
@@ -677,18 +685,6 @@ def get_neighboring_locations(dimension, location):
 
     return neighboring_locations
 
-# -----------------------------------------------------------------------------
-# Function: filter_patially_filled_squares
-# This function takes a list of squares and returns the list of squares that
-# are not fully filled.
-# -----------------------------------------------------------------------------
-def filter_patially_filled_squares(squares):
-    partially_filled_squares = []
-    for square in squares:
-        if len(square.beetles) < square.capacity:
-            partially_filled_squares.append(square)
-    return partially_filled_squares
-
 # =============================================================================
 # Main program
 # =============================================================================
@@ -700,6 +696,7 @@ def filter_patially_filled_squares(squares):
 # -----------------------------------------------------------------------------
 def main(dimension):
 
+    # Initialize the main window.
     global root
     root = create_main_window()
 
