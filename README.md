@@ -1,16 +1,16 @@
 # Beetle Battle
-Beetle Battle board game in Python
+Beetle Battle board game in Python. Refer to "[Beetle Battle manual](manual/manual.md)" for the manual. 
 
-# Requirements
+## Requirements
 Be sure to install Python (https://www.python.org/downloads/).
 
-# Execute the script
-The script can be run by executing the caommand:
+## Execute the script
+The script can be run by executing the command:
 ```
-$ python3 beetle-battle.py
+$ python3 app.py
 ```
 
-# Create executable
+## Create executable
 The Python script can be packaged into an executable using the ``pyinstaller`` tool (see https://pyinstaller.org). This tool can be installed by executing the following command:
 ```
 $ pip install pyinstaller
