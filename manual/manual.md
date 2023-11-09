@@ -7,10 +7,7 @@ Beetle Battle is a turn based board game.
 
 The board comprises NxN squares, with N being 3, 4, 5 or 10 as shown in the figures below.
 
-<img src="./fig_06.png" height="200">
-<img src="./fig_07.png" height="200">
-<img src="./fig_08.png" height="200">
-<img src="./fig_09.png" height="200">
+<img src="./fig_06.png" height="200"><img src="./fig_07.png" height="200"><img src="./fig_08.png" height="200"><img src="./fig_09.png" height="200">
 
 The dimension can be selected in the menu under the Board menu item.
 
