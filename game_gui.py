@@ -332,12 +332,12 @@ class GameGui:
                 self.canvas.itemconfig(self.rectangles[index], fill="light gray")
 
    # -----------------------------------------------------------------------------
-    # Method: download_moves
-    # This method downloads the moves to a CSV file.
+    # Method: save_game
+    # This method saves the game by saving the moves to a CSV file.
     # The format is as follows:
     #   move_number, color, row, column
     # -----------------------------------------------------------------------------
-    def download_moves(self, calling_window):
+    def save_game(self, calling_window):
 
         # Create a CSV string from the moves.
         csv_data = [("move_number", "color", "row", "column")]  # Start with the header
@@ -437,9 +437,9 @@ class GameGui:
                 command=lambda: [message_window.destroy(), self.new_game()], 
                 padx=20, pady=5).pack(side=tk.LEFT)
 
-        # Add a "Download moves" button, assuming you have a method self.download_moves
-        tk.Button(button_frame, text="Download moves", 
-                command=lambda: [self.download_moves(message_window)], 
+        # Add a "Save game" button, assuming you have a method self.download_moves
+        tk.Button(button_frame, text="Save game", 
+                command=lambda: [self.save_game(message_window)], 
                 padx=20, pady=5).pack(side=tk.LEFT)
         
         # Capture the window close (X) button click as well
