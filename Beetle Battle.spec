@@ -2,7 +2,7 @@
 
 
 a = Analysis(
-    ['beetle-battle.py'],
+    ['app.py'],
     pathex=[],
     binaries=[],
     datas=[],
