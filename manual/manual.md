@@ -1,11 +1,23 @@
+
 # Beetle Battle game manual
+<hr>
+<i>
+<p>
+Beetle Battle is a turn based game for two players played on a grid of squares.
+<p>
+Each turn a player places a 'beetle' on one of the squares of the board that is empty or contains beetles of the same color. When a square contains the maximum capacity of beetles, the beetles will jump-out and spread out to the adjacent squares. When these squares already contain beetles of the opposite color, these beetles are conquered and change color.
+<p>
+A player wins when all the beetles of the other player are conqured.
+<p>
+With beetles jumping onto already occupied squares, the maximum capacity of these squares can be reached, resulting in the beetles jumping also. Especially later on in the game this can create a whole cascade of jumping beetles, making the game very unpredictable and exciting.
+</i>
+<hr>
 
 ## Board
-Beetle Battle is a turn based board game. 
 
 ### Dimension
 
-The board has a certain _dimension_ which can be 3, 4, 5 or 10. The dimension determins the grid of squares as shown in the figures below.
+The board has a certain _dimension_ which can be 3, 4, 5 or 10. The dimension determins the grid of squares as shown in the screenshots below.
 
 <img src="./figures/fig_06.png" height="200"><img src="./figures/fig_07.png" height="200"><img src="./figures/fig_08.png" height="200"><img src="./figures/fig_09.png" height="200">
 
@@ -30,7 +42,7 @@ A beetle can be placed on an empty square or a square containing beetles of the 
 <img src="./figures/fig_10.png" height="300">
 
 ## Jumping beetles
-When placing a beetle on a square and the number of beetles becomes the same as the capacity of the square, all beetles will jump to the adjacent tiles, one beetle to each adjacent tile as illustrated in the figures below where a red beetle is placed on square (1,1) in the left figure, resulting in the beetles jumping to the adjacent squares resulting in the right figure.
+When placing a beetle on a square and the number of beetles becomes the same as the capacity of the square, all beetles will jump to the adjacent tiles, with one beetle to each adjacent tile. This is illustrated in the screenshots below where a red beetle is placed on square (1,1) in the left screenshot, resulting in the beetles jumping to the adjacent squares resulting in the right screenshot.
 
 <img src="./figures/fig_03.png" height="300"><img src="./figures/fig_04.png" height="300">
 
