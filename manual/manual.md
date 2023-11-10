@@ -3,7 +3,7 @@
 <hr>
 <i>
 <p>
-Beetle Battle is a turn based game for two players played on a grid of squares.
+Beetle Battle is an engaging and strategic board game for two players played on a grid of squares.
 <p>
 Each turn a player places a 'beetle' on one of the squares of the board that is empty or contains beetles of the same color. When a square contains the maximum capacity of beetles, the beetles will jump-out and spread out to the adjacent squares. When these squares already contain beetles of the opposite color, these beetles are conquered and change color.
 <p>
@@ -16,8 +16,9 @@ With beetles jumping onto already occupied squares, the maximum capacity of thes
 ## Board
 
 ### Dimension
+The gameplay takes place on an $\ n \times n$ board with$\ n $ being the _dimension_ which can be set to 3, 4, 5 or 10.
 
-The board has a certain _dimension_ which can be 3, 4, 5 or 10. The dimension determins the grid of squares as shown in the screenshots below.
+The dimension determines the grid of squares as shown in the screenshots below.
 
 <img src="./figures/fig_06.png" height="200"><img src="./figures/fig_07.png" height="200"><img src="./figures/fig_08.png" height="200"><img src="./figures/fig_09.png" height="200">
 
@@ -82,3 +83,13 @@ move_number,color,row,column
 12,blue,1,1
 13,red,1,0
 ```
+## References and acknowledgements
+Beetle Battle is a stylized version of an old game concept. It shares shares similarities with the classic board games Go and Othello (also known as Reversi).
+
+It is also offered as the game "Chain Reaction" for Android by Buddy Matt Entertainment ([Google Play Store](https://play.google.com/store/apps/details?id=com.BuddyMattEnt.ChainReaction&pcampaignid=web_share)). In this mobile game players place their orbs in a cell. Once a cell has reached critical mass the orbs explode into the surrounding cells adding an extra orb and claiming the cell for the player. A cell is critical if the orbs equal the number of surrounding cells.
+
+It was also implemented in Python many years ago ([GitHub repository](https://github.com/Agnishom/ChainReactionAI)). The author also describes a heuristic strategy ([brilliant.org/wiki/chain-reaction-game](https://brilliant.org/wiki/chain-reaction-game/)).
+
+An _heuristic strategy_ refers to a set of guidelines or principles used by a player to make decisions during the game, especially in situations where calculating the optimal move is too complex or time-consuming. Heuristics in games are often simpler, rule-of-thumb strategies that help players make good (though not necessarily optimal) choices quickly.
+
+For Beetle Battle a heurist strategy is required because of the _[combinatorial explosion](https://en.wikipedia.org/wiki/Combinatorial_explosion)_ of the set of possible moves each turn. 
