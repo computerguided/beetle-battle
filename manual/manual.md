@@ -16,7 +16,7 @@ With beetles jumping onto already occupied squares, the maximum capacity of thes
 ## Board
 
 ### Dimension
-The gameplay takes place on an $\ n \times n$ board with $\ n $ being the _dimension_ which can be set to 3, 4, 5 or 10.
+The gameplay takes place on an $ n \times n$ board with $ n $ being the _dimension_ which can be set to 3, 4, 5 or 10.
 
 The dimension determines the grid of squares as shown in the screenshots below.
 
