@@ -17,62 +17,119 @@ from typing import Protocol
 class GameGuiProtocol(Protocol):
 
     # -------------------------------------------------------------------------
-    # Method: turn_changed
+    # GameGuiProtocol method: turn_changed
     # This method is called by the model to indicate that the turn has changed.
     # -------------------------------------------------------------------------
-    def turn_changed(self, color: str) -> None:
+    def turn_changed(self, sender, color: str) -> None:
         ...
 
     # -------------------------------------------------------------------------
-    # Method: beetle_moved
+    # GameGuiProtocol method: beetle_moved
     # This method is called by the model to indicate that a beetle jumped to
     # the square at the indicated location.
     # -------------------------------------------------------------------------
-    def beetle_moved(self, 
+    def beetle_moved(self, sender,
                      source_row: int, source_column: int,
                      destination_row: int, destination_colum: int) -> None:
         ...
 
     # -------------------------------------------------------------------------
-    # Method: new_beetle_added
+    # GameGuiProtocol method: new_beetle_added
     # This method is called by the model to indicate that a new beetle was
     # added at the indicated square.
     # -------------------------------------------------------------------------
-    def new_beetle_added(self, beetle_id: int, color: str, row: int, column: int) -> None:
+    def new_beetle_added(self, sender,
+                         beetle_id: int, color: str, row: int, column: int) -> None:
         ...
 
     # -------------------------------------------------------------------------
-    # Method: set_square_color
+    # GameGuiProtocol method: set_square_color
     # This method is called by the model to indicate that the color of the
     # indicated square should be changed.
     # -------------------------------------------------------------------------
-    def set_square_color(self, row: int, column: int, color: str) -> None:
+    def set_square_color(self, sender,
+                         row: int, column: int, color: str) -> None:
         ...
 
     # -------------------------------------------------------------------------
-    # Method: announce_winner
+    # GameGuiProtocol method: set_beetle_color
+    # -------------------------------------------------------------------------
+    def set_beetle_color(self, sender,
+                         beetle_id: int, color: str) -> None:
+        ...
+
+    # -------------------------------------------------------------------------
+    # GameGuiProtocol method: announce_winner
     # This method is called by the model to indicate that the game is over
     # and the indicated player won.
     # -------------------------------------------------------------------------
-    def announce_winner(self, color: str) -> None:
-        ...
+    def announce_winner(self, sender, color: str) -> None:
+        print( f"Winner: {color}" )
 
 # =============================================================================
 # Classes
 # =============================================================================
 
 # -----------------------------------------------------------------------------
+# Class: DummyGui
+# This class implements the GameGuiProtocol and can be used as a dummy GUI
+# for testing purposes.
+# -----------------------------------------------------------------------------
+class DummyGui(GameGuiProtocol):
+    
+        # -------------------------------------------------------------------------
+        # DummyGui method: turn_changed
+        # -------------------------------------------------------------------------
+        def turn_changed(self, sender, color: str) -> None:
+            pass
+    
+        # -------------------------------------------------------------------------
+        # DummyGui method: beetle_moved
+        # -------------------------------------------------------------------------
+        def beetle_moved(self, sender,
+                        source_row: int, source_column: int,
+                        destination_row: int, destination_colum: int) -> None:
+            pass    
+        # -------------------------------------------------------------------------
+        # DummyGui method: new_beetle_added
+        # -------------------------------------------------------------------------
+        def new_beetle_added(self, sender,
+                             beetle_id: int, color: str, row: int, column: int) -> None:
+            pass
+
+        # -------------------------------------------------------------------------
+        # DummyGui method: set_square_color
+        # -------------------------------------------------------------------------
+        def set_square_color(self, sender,
+                             row: int, column: int, color: str) -> None:
+            pass
+
+        # -------------------------------------------------------------------------
+        # DummyGui method: announce_winner
+        # -------------------------------------------------------------------------
+        def announce_winner(self, sender,
+                            color: str) -> None:
+            pass
+
+# -----------------------------------------------------------------------------
 # Class: Location
 # A location indicates the row and column on a grid of squares.
 # -----------------------------------------------------------------------------
 class Location:
-    row = 0
+    row    = 0
     column = 0
 
     # -------------------------------------------------------------------------
     def __init__(self, row, column):
-        self.row = row
+        self.row    = row
         self.column = column
+
+    # -------------------------------------------------------------------------
+    # Location method: deep_copy
+    # This method returns a deep copy of the location.
+    # -------------------------------------------------------------------------
+    def deep_copy(self):
+        return Location(self.row, self.column)
 
 # -----------------------------------------------------------------------------
 # Class: Beetle
@@ -80,28 +137,49 @@ class Location:
 # In case the beetle is jumping, it also has a destination.
 # -----------------------------------------------------------------------------
 class Beetle:
-    color = None
-    location = None
+    color       = None
+    location    = None
     destination = None
-    circle = None
-    id = None
+    id          = None
 
+    # -------------------------------------------------------------------------
+    # Beetle constructor
     # -------------------------------------------------------------------------
     def __init__(self, color, location, id):
-        self.color = color
-        self.location = location
+        self.color       = color
+        self.location    = location
         self.destination = None
-        self.id = id
+        self.id          = id
 
     # -------------------------------------------------------------------------
+    # Beetle method: deep_copy
+    # This method returns a deep copy of the beetle.
+    # -------------------------------------------------------------------------
+    def deep_copy(self):
+        beetle_copy = Beetle(self.color, self.location.deep_copy(), self.id)
+        if self.destination is not None:
+            beetle_copy.destination = self.destination.deep_copy()
+        return beetle_copy
+
+    # -------------------------------------------------------------------------
+    # Beetle method: prepare_jump
+    # This method takes a destination and prepares the beetle to jump to that
+    # destination.
+
     def prepare_jump(self, destination):
         self.destination = destination
 
+    # -------------------------------------------------------------------------
+    # Beetle method: jump
+    # This method makes the beetle jump to the destination.
     # -------------------------------------------------------------------------
     def jump(self):
         self.location = self.destination
         self.destination = None
 
+    # -------------------------------------------------------------------------
+    # Beetle method: set_color
+    # This method takes a color and sets the color of the beetle.
     # -------------------------------------------------------------------------
     def set_color(self, color):
         self.color = color
@@ -114,17 +192,30 @@ class Beetle:
 # its capacity.
 # -----------------------------------------------------------------------------
 class Square:
-    capacity = 0
+    capacity = None
     location = None
-    beetles = []
+    beetles  = None
 
+    # -------------------------------------------------------------------------
+    # Square constructor
+    # -------------------------------------------------------------------------
     def __init__(self, location):
-
         self.location = location
         self.beetles = []
 
     # -------------------------------------------------------------------------
-    # Method: get_color
+    # Square method: deep_copy
+    # This method returns a deep copy of the square.
+    # -------------------------------------------------------------------------
+    def deep_copy(self):
+        square_copy = Square(self.location.deep_copy())
+        square_copy.capacity = self.capacity
+        for beetle in self.beetles:
+            square_copy.beetles.append(beetle.deep_copy())
+        return square_copy
+
+    # -------------------------------------------------------------------------
+    # Square method: get_color
     # This method returns the color of the beetles in the square. If there
     # are no beetles in the square, then it returns "white".
     # -------------------------------------------------------------------------
@@ -135,24 +226,24 @@ class Square:
                 return self.beetles[0].color
 
     # -------------------------------------------------------------------------
-    # Method: add_beetle
+    # Square method: add_beetle
     # This method takes a beetle and adds it to the square. The color of the
     # beetles in the square is set by the color of the beetle that is added.
     # -------------------------------------------------------------------------
     def add_beetle(self, new_beetle):
-        self.beetles.append(new_beetle)
         for beetle in self.beetles:
             beetle.set_color(new_beetle.color)
+        self.beetles.append(new_beetle)
 
     # -------------------------------------------------------------------------
-    # Method: remove_beetle
+    # Square method: remove_beetle
     # This method takes a beetle and removes it from the square.
     # -------------------------------------------------------------------------
     def remove_beetle(self, beetle):
         self.beetles.remove(beetle)
 
     # -------------------------------------------------------------------------
-    # Method: check_jumping_beetles
+    # Square method: check_jumping_beetles
     # This method determines whether or not the beetles on the square are
     # jumping.
     # -------------------------------------------------------------------------
@@ -169,13 +260,12 @@ class Square:
 # the row and column in that matrix.
 # -----------------------------------------------------------------------------
 class Board:
-    dimension = 0
-    squares = []
-    rectangles = []
-    beetles = []
+    dimension = None
+    squares = None
+    num_beetles = 0
 
     # -------------------------------------------------------------------------
-    # Constructor
+    # Board constructor
     # The constructor takes the dimension of the board and creates the squares.
     # The capacity of each square is determined by the number of neighboring
     # squares.
@@ -183,7 +273,6 @@ class Board:
     def __init__(self, dimension):
         self.dimension = dimension
         self.squares = []
-        self.beetles = []
         for row in range(dimension):
             for column in range(dimension):
                 square = Square(Location(row, column))
@@ -191,9 +280,22 @@ class Board:
                 neighboring_locations = get_neighboring_locations(dimension, location)
                 square.capacity = len(neighboring_locations)
                 self.squares.append(square)
+        self.num_beetles = 0
 
     # -------------------------------------------------------------------------
-    # Method: get_square_by_location
+    # Board method: deep_copy
+    # This method returns a deep copy of the board. 
+    # -------------------------------------------------------------------------
+    def deep_copy(self):
+        board_copy = Board(self.dimension)
+        board_copy.squares = []
+        for square in self.squares:
+            board_copy.squares.append(square.deep_copy())
+        board_copy.num_beetles = self.num_beetles
+        return board_copy
+
+    # -------------------------------------------------------------------------
+    # Board method: get_square_by_location
     # This method takes a location and returns the square at that location.
     # -------------------------------------------------------------------------
     def get_square_by_location(self, row, column):
@@ -201,7 +303,7 @@ class Board:
         return self.squares[location.row * self.dimension + location.column]
     
     # -------------------------------------------------------------------------
-    # Method: get_empty_squares
+    # Board method: get_empty_squares
     # This method returns the list of squares that have no beetles.
     # -------------------------------------------------------------------------
     def get_empty_squares(self):
@@ -212,7 +314,7 @@ class Board:
         return empty_squares
 
     # -------------------------------------------------------------------------
-    # Method: get_squares_by_color
+    # Board method: get_squares_by_color
     # This method takes a color and returns the list of squares that have a
     # beetle of that color.
     # -------------------------------------------------------------------------
@@ -224,19 +326,19 @@ class Board:
         return found_squares
         
     # -------------------------------------------------------------------------
-    # Method: place_new_beetle
+    # Board method: place_new_beetle
     # This method takes a color and a location and places a new beetle of that
     # color at that location.
     # -------------------------------------------------------------------------
     def place_new_beetle(self, color, location):
         square = self.get_square_by_location(location.row, location.column)
-        beetle = Beetle(color, location, len(self.beetles) )
-        self.beetles.append(beetle)
+        beetle = Beetle(color, location, self.num_beetles )
         self.add_beetle(beetle, square)
+        self.num_beetles += 1
         return beetle
 
     # -------------------------------------------------------------------------
-    # Method: add_beetle
+    # Board method: add_beetle
     # This method takes a beetle and adds it to the specified square. If the
     # square becomes fully filled, then the beetles are prepared to jump to
     # the neighboring squares.
@@ -256,7 +358,7 @@ class Game:
     gui : GameGuiProtocol = None
 
     # -------------------------------------------------------------------------
-    # Constructor
+    # Game constructor
     # The constructor takes the dimension of the board and creates the board.
     # -------------------------------------------------------------------------
     def __init__(self, dimension, gui: GameGuiProtocol = None):
@@ -264,11 +366,37 @@ class Game:
         self.board = Board(dimension)
         self.beetles_to_jump = []
         self.turn = "red"
-        self.gui.turn_changed(self.turn)
+        self.gui.turn_changed(self, self.turn)
         self.moves = []
 
     # -------------------------------------------------------------------------
-    # Method: check_move
+    # Game method: deep_copy
+    # This method returns a deep copy of the game. Note that this is done when
+    # there are no more beetles to jump and that a dummy GUI is used.
+    # -------------------------------------------------------------------------
+    def deep_copy(self):    
+        game_copy = Game(self.board.dimension, DummyGui()) 
+        game_copy.board = self.board.deep_copy()
+        game_copy.turn = self.turn
+        game_copy.moves = self.moves.copy()
+        return game_copy
+    
+    # -------------------------------------------------------------------------
+    # Game method: get_possible_moves
+    # This method determines all the possible moves for the current turn.
+    # -------------------------------------------------------------------------
+    def get_possible_moves(self):
+        possible_moves = []
+        empty_squares = self.board.get_empty_squares()
+        squares_with_current_turn_color = self.board.get_squares_by_color(self.turn)
+        for square in empty_squares:
+            possible_moves.append(square.location)
+        for square in squares_with_current_turn_color:
+            possible_moves.append(square.location)
+        return possible_moves
+
+    # -------------------------------------------------------------------------
+    # Game method: check_move
     # This method takes a location and checks if the move is valid given the
     # current turn.
     # -------------------------------------------------------------------------
@@ -278,26 +406,18 @@ class Game:
         if self.get_winner() is not None:
             # No move is allowed if the game is over.
             return False
-
-        # Get the square at the specified location.
-        square = self.board.get_square_by_location(location.row, location.column)
-
-        # Get the empty squares.
-        empty_squares = self.board.get_empty_squares()
-
-        # Get the squares that have beetles of the current turn's color.
-        squares_with_current_turn_color = self.board.get_squares_by_color(self.turn)
-
-        # Check if the square at the specified location is is part of the empty 
-        # squares or the squares that have beetles of the current turn's color.
-        if square in empty_squares or square in squares_with_current_turn_color:
-            return True
+        
+        # Check if the move is valid.
+        possible_moves = self.get_possible_moves()
+        for possible_move in possible_moves:
+            if possible_move.row == location.row and possible_move.column == location.column:
+                return True
         
         # Invalid move.
         return False
 
     # -------------------------------------------------------------------------
-    # Method: do_move
+    # Game method: do_move
     # This method takes a color and a location and places a new beetle of that
     # color at that location.
     # -------------------------------------------------------------------------
@@ -311,7 +431,7 @@ class Game:
         color = self.turn
 
         new_beetle = self.board.place_new_beetle(color, location)
-        self.gui.new_beetle_added(new_beetle.id, color, location.row, location.column)
+        self.gui.new_beetle_added(self, new_beetle.id, color, location.row, location.column)
 
         square = self.board.get_square_by_location(location.row, location.column)
         self.evaluate_square(square)
@@ -322,7 +442,7 @@ class Game:
         # If there is a winner, then the game is over.
         winner = self.get_winner()
         if winner is not None:
-            self.gui.announce_winner(winner)
+            self.gui.announce_winner(self, winner)
             return
         
         if self.turn == "red":
@@ -330,10 +450,10 @@ class Game:
         else:
             self.turn = "red"
 
-        self.gui.turn_changed(self.turn)
+        self.gui.turn_changed(self, self.turn)
 
     # -------------------------------------------------------------------------
-    # Method: evaluate_square
+    # Game method: evaluate_square
     # This method takes a square and if the square is fully filled, then the
     # beetles on the square are prepared to jump to the neighboring squares.
     # -------------------------------------------------------------------------
@@ -354,7 +474,7 @@ class Game:
                 self.beetles_to_jump.append(square.beetles[index])
 
     # -------------------------------------------------------------------------
-    # Method: transition
+    # Game method: transition
     # This method performs the transition of the game between two moves.
     # To do this it loops through the list of beetles that are about to jump and
     # make them jump to their destination when possible. If a beetle cannot jump, 
@@ -400,7 +520,7 @@ class Game:
             game_over = self.get_winner() is not None
 
     # -------------------------------------------------------------------------
-    # Method: make_beetle_jump
+    # Game method: make_beetle_jump
     # This method takes a beetle and a destination and makes the beetle jump
     # to the destination.
     # -------------------------------------------------------------------------
@@ -418,20 +538,19 @@ class Game:
         current_square.remove_beetle(beetle)
         destination_square.add_beetle(beetle)
 
-        self.gui.beetle_moved( current_square.location.row, current_square.location.column,
+        self.gui.beetle_moved( self, current_square.location.row, current_square.location.column,
             destination_square.location.row, destination_square.location.column )
 
         # If the square was conquered, then the color of the beetles was changed.
         if original_destination_color != destination_square.get_color():
             for square_beetle in destination_square.beetles:
                 if square_beetle != beetle:
-                    self.gui.set_beetle_color( square_beetle.id, beetle.color)
-
+                    self.gui.set_beetle_color(self, square_beetle.id, beetle.color)
 
         self.evaluate_square(destination_square)
            
     # -------------------------------------------------------------------------
-    # Method: get_winner
+    # Game method: get_winner
     # This method checks if there is a winner, which can only be the case from
     # move 3 onwards. It checks if there are any red squares left or any blue
     # squares left. If there are no red squares left, then blue wins. If there
@@ -461,19 +580,86 @@ class Game:
         return None
     
     # -----------------------------------------------------------------------------
-    # Method: reset_game
+    # Game method: reset_game
     # This method resets the game by creating a new game with the specified
     # dimension.
     # -----------------------------------------------------------------------------
     def reset_game(self):
         self.__init__(self.board.dimension, self.gui)
 
+    # -----------------------------------------------------------------------------
+    # Game method: calculate_heuristic_values
+    # This method calculates the heuristic values of the current game state for
+    # each of the possible moves.
+    # -----------------------------------------------------------------------------
+    def calculate_heuristic_values(self):
+        heuristic_values = []
+
+        # Get the possible moves.
+        possible_moves = self.get_possible_moves()
+
+        # Determine the heuristic value for each of the possible moves.
+        for move in possible_moves:
+            heuristic_value = self.calculate_move_value(move)
+            heuristic_values.append(heuristic_value)
+
+        return heuristic_values
+
+    # -----------------------------------------------------------------------------
+    # Game method: calculate_move_value
+    # This method calculates the heuristic value of the current game state for
+    # the specified move.
+    # -----------------------------------------------------------------------------
+    def calculate_move_value(self, move):
+        heuristic_value = 0
+
+        # Deep copy the game (which uses a dummy GUI).
+        # Note that this copy is done when there are no more beetles to jump.
+        game_copy = self.deep_copy()
+
+        # Perform the move on the game copy.
+        game_copy.do_move(move.row, move.column)
+
+        # Determine the number of red squares and blue squares.
+        num_red_squares = len(game_copy.board.get_squares_by_color("red"))
+        num_blue_squares = len(game_copy.board.get_squares_by_color("blue"))
+
+        # Simple heuristic: the number of red squares minus the number of blue squares.
+        heuristic_value = num_red_squares - num_blue_squares
+
+        # Set the sign of the heuristic value to the current turn.
+        if self.turn == "blue":
+            heuristic_value = -heuristic_value
+        
+        return heuristic_value
+    
+    # -----------------------------------------------------------------------------
+    # Game method: get_best_move
+    # This method determines the best move for the current turn.
+    # -----------------------------------------------------------------------------
+    def get_best_move(self):
+        best_move = None
+        best_heuristic_value = None
+
+        # Get the possible moves.
+        possible_moves = self.get_possible_moves()
+
+        # Determine the heuristic value for each of the possible moves.
+        for move in possible_moves:
+            heuristic_value = self.calculate_move_value(move)
+
+            if best_heuristic_value is None or heuristic_value > best_heuristic_value:
+                best_heuristic_value = heuristic_value
+                best_move = move
+
+        return best_move
+
 # =============================================================================
 # Data manipulation functions
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# Function: get_capacity
+# Function: get_neighboring_locations
 # This function determines the neighboring locations of a square at a certain 
 # location. It takes the dimension of the board and the location of the square and returns
 # the list of neighboring locations.

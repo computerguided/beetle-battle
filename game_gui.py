@@ -380,13 +380,17 @@ class GameGui:
     # -------------------------------------------------------------------------
     # Method: turn_changed
     # -------------------------------------------------------------------------
-    def turn_changed(self, color: str) -> None:
+    def turn_changed(self, sender, color: str) -> None:
         self.set_window_title(color)
+
+        best_move = sender.get_best_move()
+        if best_move is not None:
+            print(f"Best move for {color} is ({best_move.row}, {best_move.column})")
 
     # -------------------------------------------------------------------------
     # Method: beetle_moved
     # -------------------------------------------------------------------------
-    def beetle_moved(self, 
+    def beetle_moved(self, sender,
                      source_row: int, source_column: int,
                      destination_row: int, destination_colum: int) -> None:
         self.set_internal_positions(source_row, source_column)
@@ -395,7 +399,8 @@ class GameGui:
     # -------------------------------------------------------------------------
     # Method: new_beetle_added
     # -------------------------------------------------------------------------
-    def new_beetle_added(self, beetle_id: int, color: str, row: int, column: int) -> None:
+    def new_beetle_added(self, sender,
+                         beetle_id: int, color: str, row: int, column: int) -> None:
         new_circle = self.draw_circle(row, column, color)
         self.circles.append(new_circle)
         self.set_internal_positions(row, column)
@@ -403,14 +408,16 @@ class GameGui:
     # -------------------------------------------------------------------------
     # Method: set_beetle_color
     # -------------------------------------------------------------------------
-    def set_beetle_color(self, beetle_id: int, color: str) -> None:
+    def set_beetle_color(self, sender,
+                         beetle_id: int, color: str) -> None:
         circle = self.circles[beetle_id]
         self.change_circle_color(circle, color)
 
     # -------------------------------------------------------------------------
     # Method: announce_winner
     # -------------------------------------------------------------------------
-    def announce_winner(self, color: str) -> None:
+    def announce_winner(self, sender,
+                        color: str) -> None:
         message = "The winner is " + color + "!"
 
         # Create a top-level window to act as the message box
