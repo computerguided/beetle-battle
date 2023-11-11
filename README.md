@@ -18,7 +18,7 @@ $ pip install pyinstaller
 
 When the tool is installed, an executable can be created by executing the following command:
 ```
-$ pyinstaller Beetle\ Battle.spec 
+$ python -m PyInstaller "Beetle Battle.spec" 
 ```
 
 This will create an executable in the `dist` folder. On OS X this is the ``Beetle Battle.app`` package which is an macOS app that can be executed and copied in your applications folder.
