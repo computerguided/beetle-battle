@@ -342,7 +342,7 @@ class GameGui:
         # Create a CSV string from the moves.
         csv_data = [("move_number", "color", "row", "column")]  # Start with the header
         for index, move in enumerate(self.game.moves):
-            csv_data.append((index + 1, move[0], move[1].row, move[1].column))
+            csv_data.append((index + 1, move.color, move.location.row, move.location.column))
 
         # Format the current date and time as yyyymmddhhmm
         current_time = datetime.datetime.now()
@@ -392,9 +392,9 @@ class GameGui:
     # -------------------------------------------------------------------------
     def beetle_moved(self, sender,
                      source_row: int, source_column: int,
-                     destination_row: int, destination_colum: int) -> None:
+                     destination_row: int, destination_column: int) -> None:
         self.set_internal_positions(source_row, source_column)
-        self.set_internal_positions(destination_row, destination_colum)
+        self.set_internal_positions(destination_row, destination_column)
 
     # -------------------------------------------------------------------------
     # Method: new_beetle_added
