@@ -8,6 +8,8 @@
 # Imports
 # =============================================================================
 from typing import Protocol
+from typing import Optional
+import random
 
 # =============================================================================
 # Protocol: GameGuiProtocol
@@ -80,7 +82,7 @@ class DummyGui(GameGuiProtocol):
         # -------------------------------------------------------------------------
         # DummyGui method: turn_changed
         # -------------------------------------------------------------------------
-        def turn_changed(self, sender, color: str) -> None:
+        def turn_changed(self, sender, color: str) -> None: 
             pass
     
         # -------------------------------------------------------------------------
@@ -186,14 +188,14 @@ class Beetle:
     # This method takes a destination and prepares the beetle to jump to that
     # destination.
     # -------------------------------------------------------------------------
-    def prepare_jump(self, destination):
+    def prepare_jump(self, destination) -> None:
         self.destination = destination
 
     # -------------------------------------------------------------------------
     # Beetle method: jump
     # This method makes the beetle jump to the destination.
     # -------------------------------------------------------------------------
-    def jump(self):
+    def jump(self) -> None:
         self.location = self.destination
         self.destination = None
 
@@ -219,6 +221,22 @@ class Square:
         return "white" if len(self.beetles) == 0 else self.beetles[0].color
     
     @property
+    def is_empty(self):
+        return len(self.beetles) == 0
+    
+    @property
+    def is_full(self):
+        return len(self.beetles) == self.capacity
+    
+    @property
+    def is_critical(self):
+        return len(self.beetles) == self.capacity - 1
+    
+    @property
+    def num_beetles(self):
+        return len(self.beetles)
+    
+    @property
     def capacity(self):
         return len(self.neighbors)
 
@@ -228,8 +246,8 @@ class Square:
     # -------------------------------------------------------------------------
     def deep_copy(self):
         square_copy = Square(self.location.deep_copy())
-        square_copy.neighbors = [ neighbor.deep_copy() for neighbor in self.neighbors]
-        square_copy.beetles = [ beetle.deep_copy() for beetle in self.beetles]
+        square_copy.neighbors = [neighbor.deep_copy() for neighbor in self.neighbors]
+        square_copy.beetles = [beetle.deep_copy() for beetle in self.beetles]
         return square_copy
 
     # -------------------------------------------------------------------------
@@ -237,7 +255,7 @@ class Square:
     # This method takes a beetle and adds it to the square. The color of the
     # beetles in the square is set by the color of the beetle that is added.
     # -------------------------------------------------------------------------
-    def add_beetle(self, new_beetle):
+    def add_beetle(self, new_beetle) -> None:
         for beetle in self.beetles:
             beetle.color = new_beetle.color
         self.beetles.append(new_beetle)
@@ -246,7 +264,7 @@ class Square:
     # Square method: remove_beetle
     # This method takes a beetle and removes it from the square.
     # -------------------------------------------------------------------------
-    def remove_beetle(self, beetle):
+    def remove_beetle(self, beetle) -> None:
         self.beetles.remove(beetle)
 
     # -------------------------------------------------------------------------
@@ -254,7 +272,7 @@ class Square:
     # This method determines whether or not the beetles on the square are
     # jumping.
     # -------------------------------------------------------------------------
-    def check_jumping_beetles(self):
+    def check_jumping_beetles(self) -> bool:
         return any(beetle.destination is not None for beetle in self.beetles)
 
 # -----------------------------------------------------------------------------
@@ -270,17 +288,13 @@ class Board:
     # The constructor takes the dimension of the board and creates the squares.
     # The capacity of each square is determined by the number of neighboring
     # squares.
-    # -------------------------------------------------------------------------
+    # -------------------------------------------------------------------------    
     def __init__(self, dimension):
         self.dimension = dimension
-        self.squares = []
-        for row in range(dimension):
-            for column in range(dimension):
-                square = Square(Location(row, column))
-                location = Location(row, column)
-                square.neighbors = self.get_neighboring_locations(location)
-                self.squares.append(square)
         self.num_beetles = 0
+        self.squares = [Square(Location(row, column)) for row in range(dimension) for column in range(dimension)]
+        for square in self.squares:
+            square.neighbors = self.get_neighboring_locations(square.location)
 
     # -------------------------------------------------------------------------
     # Board method: deep_copy
@@ -296,15 +310,14 @@ class Board:
     # Board method: get_square_by_location
     # This method takes a location and returns the square at that location.
     # -------------------------------------------------------------------------
-    def get_square_by_location(self, row, column):
-        location = Location(row, column)
-        return self.squares[location.row * self.dimension + location.column]
+    def get_square_by_location(self, row, column) -> Optional[Square]:
+        return self.squares[row * self.dimension + column]
     
     # -------------------------------------------------------------------------
     # Board method: get_empty_squares
     # This method returns the list of squares that have no beetles.
     # -------------------------------------------------------------------------
-    def get_empty_squares(self):
+    def get_empty_squares(self) -> list[Square]:
         return [square for square in self.squares if len(square.beetles) == 0]
 
     # -------------------------------------------------------------------------
@@ -312,7 +325,7 @@ class Board:
     # This method takes a color and returns the list of squares that have a
     # beetle of that color.
     # -------------------------------------------------------------------------
-    def get_squares_by_color(self, color):
+    def get_squares_by_color(self, color) -> list[Square]:
         return [square for square in self.squares if square.color == color]
         
     # -------------------------------------------------------------------------
@@ -320,20 +333,20 @@ class Board:
     # This method takes a color and a location and places a new beetle of that
     # color at that location.
     # -------------------------------------------------------------------------
-    def place_new_beetle(self, color, location):
+    def place_new_beetle(self, color, location) -> Beetle:
         square = self.get_square_by_location(location.row, location.column)
         beetle = Beetle(color, location, self.num_beetles )
         square.beetles.append(beetle)
         self.num_beetles += 1
         return beetle
     
-    # -----------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
     # Board method: get_neighboring_locations
     # This function determines the neighboring locations of a square at a certain 
     # location. It takes the dimension of the board and the location of the square and returns
     # the list of neighboring locations.
-    # -----------------------------------------------------------------------------
-    def get_neighboring_locations(self, location):
+    # -------------------------------------------------------------------------
+    def get_neighboring_locations(self, location) -> list[Location]:
 
         neighboring_locations = []
         row = location.row
@@ -384,23 +397,25 @@ class Game:
         game_copy = Game(self.board.dimension, DummyGui()) 
         game_copy.board = self.board.deep_copy()
         game_copy.turn = self.turn
-        game_copy.moves = [ move.deep_copy() for move in self.moves ]
+        game_copy.moves = [move.deep_copy() for move in self.moves]
         return game_copy
     
     # -------------------------------------------------------------------------
     # Game method: get_possible_moves
     # This method determines all the possible moves for the current turn.
     # -------------------------------------------------------------------------
-    def get_possible_moves(self):
+    def get_possible_moves(self) -> list[Location]:
         possible_squares = self.board.get_empty_squares() + self.board.get_squares_by_color(self.turn)
-        return [ square.location for square in possible_squares ]
+        return [square.location for square in possible_squares]
 
     # -------------------------------------------------------------------------
     # Game method: check_move
     # This method takes a location and checks if the move is valid given the
     # current turn.
     # -------------------------------------------------------------------------
-    def check_move(self, location):
+    def check_move(self, row, column) -> bool:
+
+        location = Location(row, column)
 
         # Check if the game is over.
         if self.get_winner() is not None:
@@ -413,14 +428,14 @@ class Game:
     
     # -------------------------------------------------------------------------
     # Game method: do_move
-    # This method takes a color and a location and places a new beetle of that
-    # color at that location.
+    # This method checks the move and if it is valid, places a new beetle of the
+    # current color at that location.
     # -------------------------------------------------------------------------
-    def do_move(self, row, column):
+    def do_move(self, row, column) -> bool:
 
         # Check if it is a valid move.
-        if not self.check_move(Location(row, column)):
-            return
+        if not self.check_move(row, column):
+            return False
 
         location = Location(row, column)
         color = self.turn
@@ -438,11 +453,13 @@ class Game:
         winner = self.get_winner()
         if winner is not None:
             self.gui.announce_winner(self, winner)
-            return
+            return True
         
         # Toggle the turn.
         self.turn = "blue" if self.turn == "red" else "red"
         self.gui.turn_changed(self, self.turn)
+
+        return True
 
     # -------------------------------------------------------------------------
     # Game method: evaluate_square
@@ -450,7 +467,7 @@ class Game:
     # beetles on the square are prepared to jump to the neighboring squares but
     # only if the beetles are not already jumping.
     # -------------------------------------------------------------------------
-    def evaluate_square(self, square):
+    def evaluate_square(self, square) -> None:
 
         # Determine the number of not jumping beetles on the square.
         not_jumping_beetles = sum(1 for beetle in square.beetles if beetle.destination is None)
@@ -475,7 +492,7 @@ class Game:
     # is removed from the list of beetles that are about to jump and moved
     # to the destination square.
     # -------------------------------------------------------------------------
-    def transition(self):
+    def transition(self) -> None:
 
         # The number of skipped beetle jumps is used to keep track of the number
         # of beetles that are skipped because they cannot jump to the destination.
@@ -517,7 +534,7 @@ class Game:
     # This method takes a beetle and a destination and makes the beetle jump
     # to the destination.
     # -------------------------------------------------------------------------
-    def make_beetle_jump(self, beetle):
+    def make_beetle_jump(self, beetle) -> None:
 
         current_square = self.board.get_square_by_location(beetle.location.row, beetle.location.column)
         destination_square = self.board.get_square_by_location(beetle.destination.row, beetle.destination.column)
@@ -551,7 +568,7 @@ class Game:
     # If there is a winner, then it
     # returns the color of the winner. Otherwise, it returns None.
     # -------------------------------------------------------------------------
-    def get_winner(self):
+    def get_winner(self) -> Optional[str]:
 
         # There can only be a winner from move 3 onwards.
         if len(self.moves) < 3:
@@ -572,79 +589,161 @@ class Game:
         # Otherwise, there is no winner.
         return None
     
-    # -----------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
     # Game method: reset_game
     # This method resets the game by creating a new game with the specified
     # dimension.
-    # -----------------------------------------------------------------------------
-    def reset_game(self):
+    # -------------------------------------------------------------------------
+    def reset_game(self) -> None:
         self.__init__(self.board.dimension, self.gui)
 
-    # -----------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
     # Game method: calculate_heuristic_values
     # This method calculates the heuristic values of the current game state for
     # each of the possible moves.
-    # -----------------------------------------------------------------------------
-    def calculate_heuristic_values(self):
+    # -------------------------------------------------------------------------
+    def calculate_heuristic_values(self) -> list[int]:
         heuristic_values = []
 
         # Get the possible moves.
         possible_moves = self.get_possible_moves()
 
         # Determine the heuristic value for each of the possible moves.
-        for move in possible_moves:
-            heuristic_value = self.calculate_move_value(move)
-            heuristic_values.append(heuristic_value)
+        heuristic_values = [self.calculate_board_value(move) for move in possible_moves] 
 
         return heuristic_values
 
-    # -----------------------------------------------------------------------------
-    # Game method: calculate_move_value
-    # This method calculates the heuristic value of the current game state for
-    # the specified move.
-    # -----------------------------------------------------------------------------
-    def calculate_move_value(self, move):
-        heuristic_value = 0
+    # -------------------------------------------------------------------------
+    # Game method: calculate_board_value
+    # This method calculates the heuristic value of the current game state after
+    # the move.
+    # -------------------------------------------------------------------------
+    def calculate_board_value(self) -> int:
 
-        # Deep copy the game (which uses a dummy GUI).
-        # Note that this copy is done when there are no more beetles to jump.
-        game_copy = self.deep_copy()
+        # Because the board value is calculated after the move, the turn has to
+        # be toggled.
+        player_color = "red" if self.turn == "blue" else "blue"
 
-        # Perform the move on the game copy.
-        game_copy.do_move(move.row, move.column)
+        move_value = 0
 
-        # Determine the number of red squares and blue squares.
-        num_red_squares = len(game_copy.board.get_squares_by_color("red"))
-        num_blue_squares = len(game_copy.board.get_squares_by_color("blue"))
+        # Count the number of beetles for each player.
+        owned_beetles = 0
+        opponent_beetles = 0
 
-        # Simple heuristic: the number of red squares minus the number of blue squares.
-        heuristic_value = num_red_squares - num_blue_squares
+        # Loop through all squares.
+        for square in self.board.squares:
 
-        # Set the sign of the heuristic value to the current turn.
-        if self.turn == "blue":
-            heuristic_value = -heuristic_value
+            if square.color == player_color:
+
+                owned_beetles += square.num_beetles
+                flag_not_vulnerable = True
+
+                # Loop through all neighbors of the square.
+                for neighbor_location in square.neighbors:
+                    neighbor = self.board.get_square_by_location(neighbor_location.row, neighbor_location.column)
+                    
+                    # Check if the neighbor is owned by the opponent and if the
+                    # neighbor is critical.
+                    if neighbor.color != player_color and neighbor.is_critical:
+                        move_value -= 5 - square.capacity
+                        flag_not_vulnerable = False
+
+                if flag_not_vulnerable:
+                    #The edge Heuristic
+                    if square.capacity == 3:
+                        move_value += 2
+                    #The corner Heuristic
+                    elif square.capacity == 2:
+                        move_value += 3
+                    #The unstability Heuristic
+                    if square.is_critical:
+                        move_value += 2
+
+            else:
+                opponent_beetles += square.num_beetles
+
+        # The number of beetles Heuristic
+        move_value += owned_beetles
+
+        # You win when the opponent has no beetles
+        if opponent_beetles == 0 and owned_beetles > 1:
+            return 10000
         
-        return heuristic_value
+        # You loose when you have no beetles
+        elif owned_beetles == 0 and opponent_beetles > 1:
+            return -10000
+        
+        # The chain Heuristic
+        move_value += sum([2*i for i in self.chains(self.board) if i > 1])
+        
+        return move_value
     
-    # -----------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
+    # Game method: chains
+    # This method calculates the length of the chains.
+    # -------------------------------------------------------------------------
+    def chains(self, board) -> list[int]:
+        player_color = self.turn
+        board_copy = board.deep_copy()
+        lengths = []
+
+        for square in board_copy.squares:
+
+            # Check if the square is of the player and critical.
+            if square.color == player_color and square.is_critical:  
+
+                l = 0
+                visiting_stack = []
+                visiting_stack.append(square)
+                while len(visiting_stack) > 0:
+                    visiting_square = visiting_stack.pop()
+                    visiting_square.beetles = []
+                    l += 1
+                    for neighbor_location in visiting_square.neighbors:
+                        neighbor_square = board.get_square_by_location(neighbor_location.row, 
+                                                                neighbor_location.column)
+                        if neighbor_square.color == player_color and neighbor_square.is_critical:
+                            visiting_stack.append(neighbor_square)
+                lengths.append(l)
+
+        return lengths
+    
+    # -------------------------------------------------------------------------
     # Game method: get_best_move
     # This method determines the best move for the current turn.
-    # -----------------------------------------------------------------------------
-    def get_best_move(self):
-        best_move = None
-        best_heuristic_value = None
+    # -------------------------------------------------------------------------
+    def get_best_move(self) -> Location:
+
+        # Get the best possible moves.
+        best_possible_moves = self.get_best_possible_moves()
+
+        # Randomly select one of the best possible moves.
+        return best_possible_moves[random.randint(0, len(best_possible_moves)-1)]
+    
+    # -------------------------------------------------------------------------
+    # Game method: get_best_moves_list
+    # This method generates the list of best possible moves for the current turn.
+    # -------------------------------------------------------------------------
+    def get_best_possible_moves(self) -> [Location]:
+        best_moves = []
+        best_move_value = None
 
         # Get the possible moves.
         possible_moves = self.get_possible_moves()
 
-        # Determine the heuristic value for each of the possible moves.
+        # Determine the move value for each of the possible moves.
         for move in possible_moves:
-            heuristic_value = self.calculate_move_value(move)
+            game_copy = self.deep_copy()
+            game_copy.do_move(move.row, move.column)
+            move_value = game_copy.calculate_board_value()
 
-            if best_heuristic_value is None or heuristic_value > best_heuristic_value:
-                best_heuristic_value = heuristic_value
-                best_move = move
+            if best_move_value is None or move_value > best_move_value:
+                best_move_value = move_value
+                best_moves = [move]
+            elif move_value == best_move_value:
+                best_moves.append(move)
 
-        return best_move
+        return best_moves
+
 
 # =============================================================================

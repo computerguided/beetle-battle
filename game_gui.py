@@ -12,6 +12,8 @@ import os
 import csv
 from tkinter import filedialog
 import datetime
+from multiprocessing import Process
+from typing import Optional
 
 # =============================================================================
 # Local Imports
@@ -21,24 +23,29 @@ from game_engine import Game
 # =============================================================================
 # Constants
 # =============================================================================
-SQUARE_SIZE = 100  # Size of the squares in pixels
+SQUARE_SIZE = 80  # Size of the squares in pixels
 
 # =============================================================================
 # Class: GameGui
 # =============================================================================
 class GameGui:
-    game = None
-    root = None
-    canvas = None
-    circles = None
-    rectangles = None
 
     # -----------------------------------------------------------------------------
-    # Function: __init__
+    # GameGui constructor
     # This function initializes the GUI.
     # -----------------------------------------------------------------------------
-    def __init__(self, dimension = 3):
+    def __init__(self, dimension = 3, root = None, canvas = None):
+
+        # Properties
+        self.game = None
+        self.rectangles = None
+        self.computer_player = "blue"
         self.circles = []
+        self.player_selection = None
+        self.last_move_rectangle = None
+        self.root = root
+        self.canvas = canvas
+
         self.create_main_window()
         self.init_canvas(dimension)
         self.set_window_title()
@@ -51,7 +58,7 @@ class GameGui:
         # Center the main window
         self.center_window(self.root, window_width, window_height)
 
-        # Enable the canvas again.
+        # Enable the canvas.
         self.canvas.bind("<Button-1>", self.on_canvas_click)
 
         self.game = Game(dimension, self)
@@ -60,19 +67,23 @@ class GameGui:
         self.root.mainloop()
 
     # -----------------------------------------------------------------------------
-    # Function: new_game
+    # GameGui method: new_game
     # This function creates a new game.
     # -----------------------------------------------------------------------------
-    def new_game(self, dimension = None):
+    def new_game(self, dimension = None) -> None:
+        global SQUARE_SIZE
+        if dimension == 11:
+            SQUARE_SIZE = 50
+
         if dimension is None:
             dimension = self.game.board.dimension
-        self.__init__(dimension)
+        self.__init__(dimension, self.root, self.canvas)
 
     # -----------------------------------------------------------------------------
-    # Function: create_main_window
+    # GameGui method: create_main_window
     # This function creates the root window.
     # -----------------------------------------------------------------------------
-    def create_main_window(self):
+    def create_main_window(self) -> None:
         
         # Create the root window if not already created.
         if self.root is None:
@@ -81,35 +92,61 @@ class GameGui:
             self.root.resizable(False, False)
 
         # Create the menu.
-        menubar = tk.Menu(self.root)
+        menu_bar = tk.Menu(self.root)
 
         # Create the File menu with "New game" and "Exit" items.
-        game_menu = tk.Menu(menubar, tearoff=0)
+        game_menu = tk.Menu(menu_bar, tearoff=0)
         game_menu.add_command(label="New Game", command=lambda: [self.new_game()])
         game_menu.add_separator()
         game_menu.add_command(label="Exit", command=self.root.destroy)
 
         # Add the File menu to the menu bar.
-        menubar.add_cascade(label="Game", menu=game_menu)
+        menu_bar.add_cascade(label="Game", menu=game_menu)
 
-        # Create the "Board" menu with "3x3", "4x4", "5x5", and "10x10" items.
-        board_menu = tk.Menu(menubar, tearoff=0)
-        board_menu.add_command(label="3x3",   command=lambda: [self.new_game(3)])
-        board_menu.add_command(label="4x4",   command=lambda: [self.new_game(4)])
+        # Create the Player menu
+
+        self.player_selection = tk.StringVar(value=f"Computer is {self.computer_player}")
+
+        player_menu = tk.Menu(menu_bar, tearoff=0)
+        player_menu.add_radiobutton(label="Computer is blue", variable=self.player_selection, 
+                                    value="Computer is blue", command=lambda: self.player_choice("blue"))
+        player_menu.add_radiobutton(label="Computer is red", variable=self.player_selection, 
+                                    value="Computer is red", command=lambda: self.player_choice("red"))
+        player_menu.add_radiobutton(label="Computer is both", variable=self.player_selection, 
+                                    value="Computer is both", command=lambda: self.player_choice("both"))
+        player_menu.add_radiobutton(label="2 players", variable=self.player_selection, 
+                                    value="2 players", command=lambda: self.player_choice(None))
+
+        # Add the Player menu to the menu bar
+        menu_bar.add_cascade(label="Player", menu=player_menu)
+
+        # Create the "Board" menu with dimension items.
+        board_menu = tk.Menu(menu_bar, tearoff=0)
         board_menu.add_command(label="5x5",   command=lambda: [self.new_game(5)])
-        board_menu.add_command(label="10x10", command=lambda: [self.new_game(10)])
+        board_menu.add_command(label="7x7",   command=lambda: [self.new_game(7)])
+        board_menu.add_command(label="9x9",   command=lambda: [self.new_game(9)])
+        board_menu.add_command(label="11x11", command=lambda: [self.new_game(11)])
 
         # Add the "Board" menu to the menu bar.
-        menubar.add_cascade(label="Board", menu=board_menu)
+        menu_bar.add_cascade(label="Board", menu=board_menu)
 
         # Add the menu bar to the root window.
-        self.root.config(menu=menubar)
+        self.root.config(menu=menu_bar)
 
     # -----------------------------------------------------------------------------
-    # Function: init_canvas
+    def player_choice(self, player_selection) -> None:
+        self.computer_player = player_selection
+
+        # Do the first move when the computer is set to red.
+        if len(self.game.moves) == 0 and (self.computer_player == "red" or self.computer_player == "both"):
+            best_move = self.game.get_best_move()
+            self.do_move(best_move.row, best_move.column)
+
+    # -----------------------------------------------------------------------------
+    # GameGui method: init_canvas
     # This function initializes the canvas.
     # -----------------------------------------------------------------------------
-    def init_canvas(self, dimension):
+    def init_canvas(self, dimension) -> None:
 
         # Destroy the canvas if it already exists.
         if self.canvas is not None:
@@ -120,10 +157,10 @@ class GameGui:
         self.canvas.pack()
 
     # -----------------------------------------------------------------------------
-    # Function: draw_grid
+    # GameGui method: draw_grid
     # This function draws the grid.
     # -----------------------------------------------------------------------------
-    def draw_grid(self, dimension, color="black"):
+    def draw_grid(self, dimension, color="black") -> None:
 
         # Start with a blank list of rectangles.
         self.rectangles = []
@@ -138,13 +175,13 @@ class GameGui:
                 self.rectangles.append(rectangle)
     
     # -----------------------------------------------------------------------------
-    # Function: draw_circle
+    # GameGui method: draw_circle
     # This function draws a circle on the square.
     # -----------------------------------------------------------------------------
-    def draw_circle(self, row, column, color):
-        x = column * SQUARE_SIZE + SQUARE_SIZE // 2
-        y = row * SQUARE_SIZE + SQUARE_SIZE // 2
-        radius = SQUARE_SIZE // 8
+    def draw_circle(self, row, column, color) -> int:
+        x = column * SQUARE_SIZE + SQUARE_SIZE / 2
+        y = row * SQUARE_SIZE + SQUARE_SIZE / 2
+        radius = SQUARE_SIZE / 8
         circle = self.canvas.create_oval(
             x - radius, y - radius,
             x + radius, y + radius,
@@ -153,10 +190,10 @@ class GameGui:
         return circle
 
     # -----------------------------------------------------------------------------
-    # Function: move_circle
+    # GameGui method: move_circle
     # This function moves a circle to a new location.
     # -----------------------------------------------------------------------------
-    def move_circle(self, item_id, new_x, new_y):
+    def move_circle(self, item_id, new_x, new_y) -> None:
 
         # Get the current coordinates of the circle's bounding box
         x1, y1, x2, y2 = self.canvas.coords(item_id)
@@ -174,19 +211,44 @@ class GameGui:
         self.canvas.move(item_id, dx, dy)
 
     # -----------------------------------------------------------------------------
-    # Function: change_circle_color
+    # GameGui method: draw_last_move_rectangle
+    # This function draws a rectangle around the last move.
+    # -----------------------------------------------------------------------------
+    def draw_last_move_rectangle(self, row, column, color) -> None:
+
+        # Get the rectangle at the specified location.
+        rectangle = self.rectangles[row * self.game.board.dimension + column]
+
+        # Get the coordinates of the rectangle.
+        x1, y1, x2, y2 = self.canvas.coords(rectangle)
+
+        points = [x1, y1,  # Top left
+                x2, y1,  # Top right
+                x2, y2,  # Bottom right
+                x1, y2]  # Bottom left
+        
+        # If the last move rectangle already exists, then move it to the new location.
+        if self.last_move_rectangle is not None:
+            self.canvas.coords(self.last_move_rectangle, points)
+            self.canvas.itemconfig(self.last_move_rectangle, outline=color, width=3)
+            return
+        
+        self.last_move_rectangle = self.canvas.create_polygon(points, outline=color, fill='', width=3)
+
+    # -----------------------------------------------------------------------------
+    # GameGui method: change_circle_color
     # This function changes the color of a circle.
     # -----------------------------------------------------------------------------
-    def change_circle_color(self, item_id, new_color):
+    def change_circle_color(self, item_id, new_color) -> None:
         self.canvas.itemconfig(item_id, fill=new_color)
 
    # -----------------------------------------------------------------------------
-    # Method: set_color_of_squares
+    # GameGui method: set_color_of_squares
     # This method sets the valid moves for the current turn. It does this by 
     # temporarily changing the color of the square to light gray for those squares 
     # on which the player cannot make a move.
     # -----------------------------------------------------------------------------
-    def set_color_of_squares(self, turn=None):
+    def set_color_of_squares(self, turn=None) -> None:
 
         # If the turn is not specified, then set all squares to white. This is used
         # when the game is transitioning between moves.
@@ -210,11 +272,20 @@ class GameGui:
         self.canvas.update()
 
     # -------------------------------------------------------------------------
-    # Method: set_internal_positions
+    # GameGui method: set_last_move
+    # This method sets the last move by changing the border of the square to
+    # the color of the turn.
+    # -------------------------------------------------------------------------
+    def show_last_move(self, row, column, color) -> None:
+        self.draw_last_move_rectangle(row, column, color)
+        self.canvas.update()
+
+    # -------------------------------------------------------------------------
+    # GameGui method: set_internal_positions
     # This method takes a list of beetles and sets their internal positions
     # based on the number of beetles in the square.
     # -------------------------------------------------------------------------
-    def set_internal_positions(self, row, column):
+    def set_internal_positions(self, row, column) -> None:
 
         # Get the square at the specified location
         square = self.game.board.get_square_by_location(row, column)
@@ -225,25 +296,25 @@ class GameGui:
             circles_in_square.append(self.circles[beetle.id])
 
         # Get the center of the square
-        center_x = (square.location.column * SQUARE_SIZE) + (SQUARE_SIZE // 2)
-        center_y = (square.location.row * SQUARE_SIZE) + (SQUARE_SIZE // 2)
+        center_x = (square.location.column * SQUARE_SIZE) + (SQUARE_SIZE / 2)
+        center_y = (square.location.row * SQUARE_SIZE) + (SQUARE_SIZE / 2)
     
         # Define positions for the circles based on the count
         # This list holds the positions for up to 4 circles
         positions = [
             [(center_x, center_y)],  # Center for 1 circle
             # Top and bottom for 2 circles
-            [(center_x - SQUARE_SIZE // 4, center_y - SQUARE_SIZE // 4),
-            (center_x + SQUARE_SIZE // 4, center_y + SQUARE_SIZE // 4)],
+            [(center_x - SQUARE_SIZE / 4, center_y - SQUARE_SIZE / 4),
+            (center_x + SQUARE_SIZE / 4, center_y + SQUARE_SIZE / 4)],
             # Triangle for 3 circles
-            [(center_x, center_y - SQUARE_SIZE // 4),
-            (center_x - SQUARE_SIZE // 4, center_y + SQUARE_SIZE // 4),
-            (center_x + SQUARE_SIZE // 4, center_y + SQUARE_SIZE // 4)],
+            [(center_x, center_y - SQUARE_SIZE / 4),
+            (center_x - SQUARE_SIZE / 4, center_y + SQUARE_SIZE / 4),
+            (center_x + SQUARE_SIZE / 4, center_y + SQUARE_SIZE / 4)],
             # Corners for 4 circles
-            [(center_x - SQUARE_SIZE // 4, center_y - SQUARE_SIZE // 4),
-            (center_x + SQUARE_SIZE // 4, center_y - SQUARE_SIZE // 4),
-            (center_x - SQUARE_SIZE // 4, center_y + SQUARE_SIZE // 4),
-            (center_x + SQUARE_SIZE // 4, center_y + SQUARE_SIZE // 4)],
+            [(center_x - SQUARE_SIZE / 4, center_y - SQUARE_SIZE / 4),
+            (center_x + SQUARE_SIZE / 4, center_y - SQUARE_SIZE / 4),
+            (center_x - SQUARE_SIZE / 4, center_y + SQUARE_SIZE / 4),
+            (center_x + SQUARE_SIZE / 4, center_y + SQUARE_SIZE / 4)],
         ]
 
         # Move the circles
@@ -256,34 +327,37 @@ class GameGui:
         self.canvas.update()
 
     # -----------------------------------------------------------------------------
-    # Function: on_canvas_click
+    # GameGui method: on_canvas_click
     # This function is called when the canvas is clicked on a certain square.
     # -----------------------------------------------------------------------------
-    def on_canvas_click(self, event):
+    def on_canvas_click(self, event) -> None:
 
         # Calculate the row and column number
-        col = event.x // SQUARE_SIZE
-        row = event.y // SQUARE_SIZE
-            
+        column = event.x // SQUARE_SIZE
+        row    = event.y // SQUARE_SIZE
+
+        # Check if valid move.
+        if not self.game.check_move(row, column):
+            return
+
+        self.do_move(row, column)
+
+    # -----------------------------------------------------------------------------
+    # GameGui method: do_move
+    # This function places a beetle on the board. It is called when the user clicks
+    # on a square or when the computer makes a move.
+    # -----------------------------------------------------------------------------
+    def do_move(self, row, column) -> None:
         # Disable the canvas while the beetles are jumping.
         self.canvas.unbind("<Button-1>")
-
-        # Set all squares to white.
-        self.set_color_of_squares()
-
-        self.game.do_move( row, col )
-
-        # Set all squares to white.
-        self.set_color_of_squares(self.game.turn)
-        
-        # Enable the canvas again.
-        self.canvas.bind("<Button-1>", self.on_canvas_click)
+        self.show_last_move(row, column, self.game.turn) 
+        self.game.do_move( row, column )
 
     # -----------------------------------------------------------------------------
-    # Function: center_window
+    # GameGui method: center_window
     # This function centers a window on the screen.
     # -----------------------------------------------------------------------------
-    def center_window(self, window, width=300, height=200):
+    def center_window(self, window, width=300, height=200) -> None:
 
         # Get the screen width and height
         screen_width = window.winfo_screenwidth()
@@ -297,22 +371,22 @@ class GameGui:
         window.geometry(f'{width}x{height}+{x}+{y}')
 
     # -----------------------------------------------------------------------------
-    # Function: set_window_title
+    # GameGui method: set_window_title
     # This function sets the title of the window indicating the turn.
     # -----------------------------------------------------------------------------
-    def set_window_title(self, turn = None):
+    def set_window_title(self, turn = None) -> None:
         if turn is None:
             self.root.title("Beetle Battle")
             return
         self.root.title("Beetle Battle - " + turn + "'s turn")
 
     # -----------------------------------------------------------------------------
-    # Method: set_background_color_of_squares
+    # GameGui method: set_background_color_of_squares
     # This method sets the valid moves for the current turn. It does this by 
     # temporarily changing the background color of the square to light gray for 
     # those squares on which the player cannot make a move.
     # -----------------------------------------------------------------------------
-    def set_background_color_of_squares(self, turn=None):
+    def set_background_color_of_squares(self, turn=None) -> None:
 
         # If the turn is not specified, then set all squares to white. This is used
         # when the game is transitioning between moves.
@@ -332,12 +406,12 @@ class GameGui:
                 self.canvas.itemconfig(self.rectangles[index], fill="light gray")
 
    # -----------------------------------------------------------------------------
-    # Method: save_game
+    # GameGui method: save_game
     # This method saves the game by saving the moves to a CSV file.
     # The format is as follows:
     #   move_number, color, row, column
     # -----------------------------------------------------------------------------
-    def save_game(self, calling_window):
+    def save_game(self, calling_window) -> None:
 
         # Create a CSV string from the moves.
         csv_data = [("move_number", "color", "row", "column")]  # Start with the header
@@ -378,26 +452,41 @@ class GameGui:
     # -------------------------------------------------------------------------
 
     # -------------------------------------------------------------------------
-    # Method: turn_changed
+    # GameGui method: turn_changed
     # -------------------------------------------------------------------------
     def turn_changed(self, sender, color: str) -> None:
-        self.set_window_title(color)
 
-        best_move = sender.get_best_move()
-        if best_move is not None:
-            print(f"Best move for {color} is ({best_move.row}, {best_move.column})")
+        self.game = sender
+
+        self.set_window_title( color )
+        
+        # If it is not the computers turn, wait for the player.
+        if self.computer_player != color and self.computer_player != "both":
+            # Indicate invalid moves.
+            self.set_color_of_squares(color)
+        
+            # Enable the canvas again.
+            self.canvas.bind("<Button-1>", self.on_canvas_click)
+
+            return
+        
+        # Get the best move for the current turn.
+        best_move = self.game.get_best_move()
+        self.do_move(best_move.row, best_move.column)
 
     # -------------------------------------------------------------------------
-    # Method: beetle_moved
+    # GameGui method: beetle_moved
     # -------------------------------------------------------------------------
     def beetle_moved(self, sender,
                      source_row: int, source_column: int,
                      destination_row: int, destination_column: int) -> None:
-        self.set_internal_positions(source_row, source_column)
+        # First reorganize the circles in the destination square and then
+        # in the source square for better visual effect.
         self.set_internal_positions(destination_row, destination_column)
+        self.set_internal_positions(source_row, source_column)
 
     # -------------------------------------------------------------------------
-    # Method: new_beetle_added
+    # GameGui method: new_beetle_added
     # -------------------------------------------------------------------------
     def new_beetle_added(self, sender,
                          beetle_id: int, color: str, row: int, column: int) -> None:
@@ -406,7 +495,7 @@ class GameGui:
         self.set_internal_positions(row, column)
 
     # -------------------------------------------------------------------------
-    # Method: set_beetle_color
+    # GameGui method: set_beetle_color
     # -------------------------------------------------------------------------
     def set_beetle_color(self, sender,
                          beetle_id: int, color: str) -> None:
@@ -414,7 +503,7 @@ class GameGui:
         self.change_circle_color(circle, color)
 
     # -------------------------------------------------------------------------
-    # Method: announce_winner
+    # GameGui method: announce_winner
     # -------------------------------------------------------------------------
     def announce_winner(self, sender,
                         color: str) -> None:
@@ -450,6 +539,8 @@ class GameGui:
                 padx=20, pady=5).pack(side=tk.LEFT)
         
         # Capture the window close (X) button click as well
-        message_window.protocol("WM_DELETE_WINDOW", lambda: [message_window.destroy(), self.new_game()])
+        message_window.protocol("WM_DELETE_WINDOW", 
+                                lambda: [message_window.destroy(), 
+                                         self.new_game()])
 
 # =============================================================================
