@@ -615,14 +615,10 @@ class Game:
 
     # -------------------------------------------------------------------------
     # Game method: calculate_board_value
-    # This method calculates the heuristic value of the current game state after
-    # the move.
+    # This method calculates the heuristic value of the current game state for
+    # the indicated player.
     # -------------------------------------------------------------------------
-    def calculate_board_value(self) -> int:
-
-        # The move is played so the turn is toggled and therefore
-        # the player color is the opposite of the current turn.
-        player_color = "blue" if self.turn == "red" else "red"
+    def calculate_board_value(self, player_color) -> int:
 
         move_value = 0
 
@@ -674,18 +670,15 @@ class Game:
             return -10000
         
         # The chain Heuristic
-        move_value += sum([2*i for i in self.chains(self.board) if i > 1])
+        move_value += sum([2*i for i in self.chains(self.board, player_color) if i > 1])
         
         return move_value
     
     # -------------------------------------------------------------------------
     # Game method: chains
-    # This method calculates the length of the chains.
+    # This method calculates the length of the chains for the indicated player.
     # -------------------------------------------------------------------------
-    def chains(self, board) -> list[int]:
-
-        # The move is played so the turn is toggled.
-        player_color = "blue" if self.turn == "red" else "red"
+    def chains(self, board, player_color) -> list[int]:
 
         board_copy = board.deep_copy()
         lengths = []
@@ -713,7 +706,8 @@ class Game:
     
     # -------------------------------------------------------------------------
     # Game method: get_best_move
-    # This method determines the best move for the current turn.
+    # This method determines the best move for the current turn. If there is 
+    # more than one best move, then one of the best moves is randomly selected.
     # -------------------------------------------------------------------------
     def get_best_move(self) -> Location:
 
@@ -738,7 +732,7 @@ class Game:
         for move in possible_moves:
             game_copy = self.deep_copy()
             game_copy.do_move(move.row, move.column)
-            move_value = game_copy.calculate_board_value()
+            move_value = game_copy.calculate_board_value(self.turn)
 
             if best_move_value is None or move_value > best_move_value:
                 best_move_value = move_value

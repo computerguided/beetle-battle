@@ -23,7 +23,24 @@ from game_engine import Game
 # =============================================================================
 # Constants
 # =============================================================================
-SQUARE_SIZE = 80  # Size of the squares in pixels
+WINDOW_SIZE = 500  # Size of the square window
+BOARD_SIZES = [3, 5, 7, 9, 11]  # Possible board sizes
+
+# =============================================================================
+# Global Variables
+# =============================================================================
+square_size = WINDOW_SIZE // 3  # Size of the square
+
+# =============================================================================
+# Functions
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Function: get_square_size
+# This function returns the size of the square based on the dimension.
+# -----------------------------------------------------------------------------
+def get_square_size(dimension: int) -> int:
+    return WINDOW_SIZE // dimension
 
 # =============================================================================
 # Class: GameGui
@@ -51,9 +68,9 @@ class GameGui:
         self.set_window_title()
         self.draw_grid(dimension)
 
-        # Calculate the appropriate window size
-        window_width = dimension * SQUARE_SIZE
-        window_height = dimension * SQUARE_SIZE
+        # Set the appropriate window size
+        window_width = WINDOW_SIZE
+        window_height = WINDOW_SIZE
 
         # Center the main window
         self.center_window(self.root, window_width, window_height)
@@ -71,10 +88,6 @@ class GameGui:
     # This function creates a new game.
     # -----------------------------------------------------------------------------
     def new_game(self, dimension = None) -> None:
-        global SQUARE_SIZE
-        if dimension == 11:
-            SQUARE_SIZE = 50
-
         if dimension is None:
             dimension = self.game.board.dimension
         self.__init__(dimension, self.root, self.canvas)
@@ -122,10 +135,10 @@ class GameGui:
 
         # Create the "Board" menu with dimension items.
         board_menu = tk.Menu(menu_bar, tearoff=0)
-        board_menu.add_command(label="5x5",   command=lambda: [self.new_game(5)])
-        board_menu.add_command(label="7x7",   command=lambda: [self.new_game(7)])
-        board_menu.add_command(label="9x9",   command=lambda: [self.new_game(9)])
-        board_menu.add_command(label="11x11", command=lambda: [self.new_game(11)])
+
+        # Add a command for each board size.
+        for size in BOARD_SIZES:
+            board_menu.add_command(label=f"{size}x{size}", command=lambda s=size: self.new_game(s))
 
         # Add the "Board" menu to the menu bar.
         menu_bar.add_cascade(label="Board", menu=board_menu)
@@ -152,8 +165,11 @@ class GameGui:
         if self.canvas is not None:
             self.canvas.destroy()
 
+        # Calculate the square size based on the dimension.
+        square_size = get_square_size(dimension)
+
         # Create the canvas.
-        self.canvas = tk.Canvas(self.root, width=dimension * SQUARE_SIZE, height=dimension * SQUARE_SIZE)
+        self.canvas = tk.Canvas(self.root, width=dimension * square_size, height=dimension * square_size)
         self.canvas.pack()
 
     # -----------------------------------------------------------------------------
@@ -162,14 +178,17 @@ class GameGui:
     # -----------------------------------------------------------------------------
     def draw_grid(self, dimension, color="black") -> None:
 
+        # Calculate the square size based on the dimension.
+        square_size = get_square_size(dimension)
+
         # Start with a blank list of rectangles.
         self.rectangles = []
         for i in range(dimension):
             for j in range(dimension):
-                x1 = j * SQUARE_SIZE
-                y1 = i * SQUARE_SIZE
-                x2 = x1 + SQUARE_SIZE
-                y2 = y1 + SQUARE_SIZE
+                x1 = j * square_size
+                y1 = i * square_size
+                x2 = x1 + square_size
+                y2 = y1 + square_size
                 rectangle = self.canvas.create_rectangle(x1, y1, x2, y2, 
                                                         fill="white", outline=color)
                 self.rectangles.append(rectangle)
@@ -179,9 +198,13 @@ class GameGui:
     # This function draws a circle on the square.
     # -----------------------------------------------------------------------------
     def draw_circle(self, row, column, color) -> int:
-        x = column * SQUARE_SIZE + SQUARE_SIZE / 2
-        y = row * SQUARE_SIZE + SQUARE_SIZE / 2
-        radius = SQUARE_SIZE / 8
+
+        # Calculate the square size based on the dimension.
+        square_size = get_square_size(self.game.board.dimension)
+
+        x = column * square_size + square_size / 2
+        y = row * square_size + square_size / 2
+        radius = square_size / 8
         circle = self.canvas.create_oval(
             x - radius, y - radius,
             x + radius, y + radius,
@@ -295,26 +318,29 @@ class GameGui:
         for beetle in square.beetles:
             circles_in_square.append(self.circles[beetle.id])
 
+        # Calculate the square size based on the dimension.
+        square_size = get_square_size(self.game.board.dimension)
+
         # Get the center of the square
-        center_x = (square.location.column * SQUARE_SIZE) + (SQUARE_SIZE / 2)
-        center_y = (square.location.row * SQUARE_SIZE) + (SQUARE_SIZE / 2)
+        center_x = (square.location.column * square_size) + (square_size / 2)
+        center_y = (square.location.row * square_size) + (square_size / 2)
     
         # Define positions for the circles based on the count
         # This list holds the positions for up to 4 circles
         positions = [
             [(center_x, center_y)],  # Center for 1 circle
             # Top and bottom for 2 circles
-            [(center_x - SQUARE_SIZE / 4, center_y - SQUARE_SIZE / 4),
-            (center_x + SQUARE_SIZE / 4, center_y + SQUARE_SIZE / 4)],
+            [(center_x - square_size / 4, center_y - square_size / 4),
+            (center_x + square_size / 4, center_y + square_size / 4)],
             # Triangle for 3 circles
-            [(center_x, center_y - SQUARE_SIZE / 4),
-            (center_x - SQUARE_SIZE / 4, center_y + SQUARE_SIZE / 4),
-            (center_x + SQUARE_SIZE / 4, center_y + SQUARE_SIZE / 4)],
+            [(center_x, center_y - square_size / 4),
+            (center_x - square_size / 4, center_y + square_size / 4),
+            (center_x + square_size / 4, center_y + square_size / 4)],
             # Corners for 4 circles
-            [(center_x - SQUARE_SIZE / 4, center_y - SQUARE_SIZE / 4),
-            (center_x + SQUARE_SIZE / 4, center_y - SQUARE_SIZE / 4),
-            (center_x - SQUARE_SIZE / 4, center_y + SQUARE_SIZE / 4),
-            (center_x + SQUARE_SIZE / 4, center_y + SQUARE_SIZE / 4)],
+            [(center_x - square_size / 4, center_y - square_size / 4),
+            (center_x + square_size / 4, center_y - square_size / 4),
+            (center_x - square_size / 4, center_y + square_size / 4),
+            (center_x + square_size / 4, center_y + square_size / 4)],
         ]
 
         # Move the circles
@@ -332,9 +358,12 @@ class GameGui:
     # -----------------------------------------------------------------------------
     def on_canvas_click(self, event) -> None:
 
+        # Calculate the square size based on the dimension.
+        square_size = get_square_size(self.game.board.dimension)
+
         # Calculate the row and column number
-        column = event.x // SQUARE_SIZE
-        row    = event.y // SQUARE_SIZE
+        column = event.x // square_size
+        row    = event.y // square_size
 
         # Check if valid move.
         if not self.game.check_move(row, column):
