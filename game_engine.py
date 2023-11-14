@@ -449,16 +449,16 @@ class Game:
 
         self.transition()
 
+        # Toggle the turn.
+        self.turn = "blue" if self.turn == "red" else "red"
+
         # If there is a winner, then the game is over.
         winner = self.get_winner()
         if winner is not None:
             self.gui.announce_winner(self, winner)
             return True
         
-        # Toggle the turn.
-        self.turn = "blue" if self.turn == "red" else "red"
         self.gui.turn_changed(self, self.turn)
-
         return True
 
     # -------------------------------------------------------------------------
@@ -620,9 +620,9 @@ class Game:
     # -------------------------------------------------------------------------
     def calculate_board_value(self) -> int:
 
-        # Because the board value is calculated after the move, the turn has to
-        # be toggled.
-        player_color = "red" if self.turn == "blue" else "blue"
+        # The move is played so the turn is toggled and therefore
+        # the player color is the opposite of the current turn.
+        player_color = "blue" if self.turn == "red" else "red"
 
         move_value = 0
 
@@ -683,7 +683,10 @@ class Game:
     # This method calculates the length of the chains.
     # -------------------------------------------------------------------------
     def chains(self, board) -> list[int]:
-        player_color = self.turn
+
+        # The move is played so the turn is toggled.
+        player_color = "blue" if self.turn == "red" else "red"
+
         board_copy = board.deep_copy()
         lengths = []
 
