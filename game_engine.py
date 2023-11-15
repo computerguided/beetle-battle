@@ -721,7 +721,7 @@ class Game:
     # Game method: get_best_moves_list
     # This method generates the list of best possible moves for the current turn.
     # -------------------------------------------------------------------------
-    def get_best_possible_moves(self) -> [Location]:
+    def get_best_possible_moves(self) -> list[Location]:
         best_moves = []
         best_move_value = None
 
