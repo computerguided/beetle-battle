@@ -84,7 +84,7 @@ move_number,color,row,column
 13,red,1,0
 ```
 ## References and acknowledgements
-Beetle Battle is a stylized version of an old game concept called "EXPLOSION" as first encountered by the author around 1984 in an old book with BASIC programs for the [TI99/4A](https://en.wikipedia.org/wiki/TI-99/4A) called ["Terrific games for the TI99/4A"](https://archive.org/details/tibook_terrific-games-for-the-ti994a/page/n78/mode/1up).
+Beetle Battle is a stylized version of an old game concept called "EXPLOSION" as first encountered by the author around 1984 in an old book with [BASIC](https://en.wikipedia.org/wiki/BASIC) programs for the [TI99/4A](https://en.wikipedia.org/wiki/TI-99/4A) called ["Terrific games for the TI99/4A"](./documentation/terrific-games-for-the-ti994a.pdf).
 
 As a board game there are similarities with the classic board games Go and Othello (also known as Reversi) but due to its dynamics (i.e. the cascade of juming beetles that will occur), it is only practically playable on a computer.
 
