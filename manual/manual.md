@@ -40,6 +40,7 @@ The capacity indicates when the beetles will jump out of the square as will be d
 
 ## Making a move
 A beetle can be placed on an empty square or a square containing beetles of the same color. To make it easier, the squares on which no beetle can be placed are greyed-out as shown in the screenshot below where it is blue's turn.
+
 <img src="./figures/fig_10.png" height="300">
 
 ## Jumping beetles
