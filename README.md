@@ -1,5 +1,5 @@
 # Beetle Battle
-Beetle Battle board game in Python. Refer to "[Beetle Battle manual](manual/manual.md)" for the manual. 
+Beetle Battle board game in Python. Refer to "[Beetle Battle manual](manual)" for the manual. 
 
 ## Requirements
 Be sure to install Python (https://www.python.org/downloads/).
