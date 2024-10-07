@@ -1,5 +1,5 @@
 # Beetle Battle
-Beetle Battle board game in Python. Refer to "[Beetle Battle manual](manual/manual.md)" for the manual. 
+Beetle Battle board game in Python. Refer to "[Beetle Battle manual](manual)" for the manual. 
 
 ## Requirements
 Be sure to install Python (https://www.python.org/downloads/).
@@ -18,7 +18,7 @@ $ pip install pyinstaller
 
 When the tool is installed, an executable can be created by executing the following command:
 ```
-$ python -m PyInstaller "Beetle Battle.spec" 
+$ python3 -m PyInstaller "Beetle Battle.spec" 
 ```
 
 This will create an executable in the `dist` folder. On OS X this is the ``Beetle Battle.app`` package which is an macOS app that can be executed and copied in your applications folder.
