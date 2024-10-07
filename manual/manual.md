@@ -7,7 +7,7 @@ Beetle Battle is an engaging and strategic board game for two players played on 
 <p>
 Each turn a player places a 'beetle' on one of the squares of the board that is empty or contains beetles of the same color. When a square contains the maximum capacity of beetles, the beetles will jump-out and spread out to the adjacent squares. When these squares already contain beetles of the opposite color, these beetles are conquered and change color.
 <p>
-A player wins when all the beetles of the other player are conqured.
+A player wins when all the beetles of the other player are conquered.
 <p>
 With beetles jumping onto already occupied squares, the maximum capacity of these squares can be reached, resulting in the beetles jumping also. Especially later on in the game this can create a whole cascade of jumping beetles, making the game very unpredictable and exciting.
 </i>

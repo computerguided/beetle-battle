@@ -680,10 +680,12 @@ class Game:
     # -------------------------------------------------------------------------
     def chains(self, board, player_color) -> list[int]:
 
-        board_copy = board.deep_copy()
+        # Create a deep copy of all squares on the board.
+        squares = [square.deep_copy() for square in board.squares]
+
         lengths = []
 
-        for square in board_copy.squares:
+        for square in squares:
 
             # Check if the square is of the player and critical.
             if square.color == player_color and square.is_critical:  
