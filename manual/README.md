@@ -29,10 +29,10 @@ Squares are identified by their _row_ and _column_ as illustrated in the figure 
 
 <img src="./figures/fig_01.png" height="300">
 
-These coordinats are used to specify the move in stored games (see "[Save game](#save-game)").
+These coordinates are used to specify the move in stored games (see "[Save game](#save-game)").
 
 ### Square capacity
-A square has a certain _capacity_ which is defined by the number of adjacent squares as illustratd in the figure below.
+A square has a certain _capacity_ which is defined by the number of adjacent squares as illustrated in the figure below.
 
 <img src="./figures/fig_02.png" height="300">
 

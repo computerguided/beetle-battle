@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Beetle Battle</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        #game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #turn-display {
+            margin: 10px 0;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        #game-board {
+            display: grid;
+            grid-gap: 0;
+            margin: 0 auto;
+            border: 1px solid black;
+        }
+        .square {
+            border: 1px solid black;
+            box-sizing: border-box;
+            position: relative;
+            background-color: white;
+            cursor: pointer;
+        }
+        .beetle {
+            width: 12px;  /* Reduced size from 20px to 12px */
+            height: 12px;
+            border-radius: 50%;
+            position: absolute;
+            transform: translate(-50%, -50%);
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <h1>Beetle Battle</h1>
+        <div id="turn-display"></div>
+        <div id="game-board"></div>
+    </div>
+    <script>
+        class Location {
+            constructor(row, column) {
+                this.row = row;
+                this.column = column;
+            }
+
+            equals(other) {
+                return this.row === other.row && this.column === other.column;
+            }
+
+            deepCopy() {
+                return new Location(this.row, this.column);
+            }
+        }
+
+        class Move {
+            constructor(color, location) {
+                this.color = color;
+                this.location = location;
+            }
+
+            deepCopy() {
+                return new Move(this.color, this.location.deepCopy());
+            }
+        }
+
+        class Beetle {
+            constructor(color, location, id) {
+                this.color = color;
+                this.location = location;
+                this.destination = null;
+                this.id = id;
+            }
+
+            deepCopy() {
+                let beetleCopy = new Beetle(this.color, this.location.deepCopy(), this.id);
+                if (this.destination != null) {
+                    beetleCopy.destination = this.destination.deepCopy();
+                }
+                return beetleCopy;
+            }
+
+            prepareJump(destination) {
+                this.destination = destination;
+            }
+
+            jump() {
+                this.location = this.destination;
+                this.destination = null;
+            }
+        }
+
+        class Square {
+            constructor(location) {
+                this.location = location;
+                this.beetles = [];
+                this.neighbors = [];
+            }
+
+            get color() {
+                return this.beetles.length === 0 ? "white" : this.beetles[0].color;
+            }
+
+            get isEmpty() {
+                return this.beetles.length === 0;
+            }
+
+            get isFull() {
+                return this.beetles.length === this.capacity;
+            }
+
+            get isCritical() {
+                return this.beetles.length === this.capacity - 1;
+            }
+
+            get numBeetles() {
+                return this.beetles.length;
+            }
+
+            get capacity() {
+                return this.neighbors.length;
+            }
+
+            deepCopy() {
+                let squareCopy = new Square(this.location.deepCopy());
+                squareCopy.neighbors = this.neighbors.map(neighbor => neighbor.deepCopy());
+                squareCopy.beetles = this.beetles.map(beetle => beetle.deepCopy());
+                return squareCopy;
+            }
+
+            addBeetle(newBeetle) {
+                for (let beetle of this.beetles) {
+                    beetle.color = newBeetle.color;
+                }
+                this.beetles.push(newBeetle);
+            }
+
+            removeBeetle(beetle) {
+                let index = this.beetles.indexOf(beetle);
+                if (index > -1) {
+                    this.beetles.splice(index, 1);
+                }
+            }
+
+            checkJumpingBeetles() {
+                return this.beetles.some(beetle => beetle.destination != null);
+            }
+        }
+
+        class Board {
+            constructor(dimension) {
+                this.dimension = dimension;
+                this.numBeetles = 0;
+                this.squares = [];
+                for (let row = 0; row < dimension; row++) {
+                    for (let column = 0; column < dimension; column++) {
+                        this.squares.push(new Square(new Location(row, column)));
+                    }
+                }
+                for (let square of this.squares) {
+                    square.neighbors = this.getNeighboringLocations(square.location);
+                }
+            }
+
+            deepCopy() {
+                let boardCopy = new Board(this.dimension);
+                boardCopy.squares = this.squares.map(square => square.deepCopy());
+                boardCopy.numBeetles = this.numBeetles;
+                return boardCopy;
+            }
+
+            getSquareByLocation(row, column) {
+                return this.squares[row * this.dimension + column];
+            }
+
+            getEmptySquares() {
+                return this.squares.filter(square => square.beetles.length === 0);
+            }
+
+            getSquaresByColor(color) {
+                return this.squares.filter(square => square.color === color);
+            }
+
+            placeNewBeetle(color, location) {
+                let square = this.getSquareByLocation(location.row, location.column);
+                let beetle = new Beetle(color, location, this.numBeetles);
+                square.beetles.push(beetle);
+                this.numBeetles += 1;
+                return beetle;
+            }
+
+            getNeighboringLocations(location) {
+                let neighboringLocations = [];
+                let row = location.row;
+                let column = location.column;
+
+                if (row > 0) {
+                    neighboringLocations.push(new Location(row - 1, column));
+                }
+                if (row < this.dimension - 1) {
+                    neighboringLocations.push(new Location(row + 1, column));
+                }
+                if (column > 0) {
+                    neighboringLocations.push(new Location(row, column - 1));
+                }
+                if (column < this.dimension - 1) {
+                    neighboringLocations.push(new Location(row, column + 1));
+                }
+                return neighboringLocations;
+            }
+        }
+
+        class Game {
+            constructor(dimension, gui = null) {
+                this.gui = gui;
+                this.board = new Board(dimension);
+                this.beetlesToJump = [];
+                this.turn = "red";
+                this.moves = [];
+                if (this.gui) {
+                    this.gui.turnChanged(this, this.turn);
+                }
+            }
+
+            deepCopy() {
+                let gameCopy = new Game(this.board.dimension, null); // No GUI
+                gameCopy.board = this.board.deepCopy();
+                gameCopy.turn = this.turn;
+                gameCopy.moves = this.moves.map(move => move.deepCopy());
+                return gameCopy;
+            }
+
+            getPossibleMoves() {
+                let possibleSquares = this.board.getEmptySquares().concat(this.board.getSquaresByColor(this.turn));
+                return possibleSquares.map(square => square.location);
+            }
+
+            checkMove(row, column) {
+                let location = new Location(row, column);
+                if (this.getWinner() != null) {
+                    return false;
+                }
+                let possibleMoves = this.getPossibleMoves();
+                return possibleMoves.some(loc => loc.equals(location));
+            }
+
+            doMove(row, column) {
+                if (!this.checkMove(row, column)) {
+                    return false;
+                }
+                let location = new Location(row, column);
+                let color = this.turn;
+
+                let newBeetle = this.board.placeNewBeetle(color, location);
+                if (this.gui) {
+                    this.gui.newBeetleAdded(this, newBeetle.id, color, location.row, location.column);
+                }
+
+                let square = this.board.getSquareByLocation(location.row, location.column);
+                this.evaluateSquare(square);
+                this.moves.push(new Move(color, location));
+
+                this.transition();
+
+                this.turn = (this.turn === "red") ? "blue" : "red";
+
+                let winner = this.getWinner();
+                if (winner != null) {
+                    if (this.gui) {
+                        this.gui.announceWinner(this, winner);
+                    }
+                    return true;
+                }
+
+                if (this.gui) {
+                    this.gui.turnChanged(this, this.turn);
+                }
+                return true;
+            }
+
+            evaluateSquare(square) {
+                let notJumpingBeetles = square.beetles.filter(beetle => beetle.destination == null).length;
+                if (notJumpingBeetles < square.capacity) {
+                    return;
+                }
+                let neighboringLocations = square.neighbors;
+                for (let i = 0; i < neighboringLocations.length; i++) {
+                    let location = neighboringLocations[i];
+                    let beetle = square.beetles[i];
+                    beetle.prepareJump(location);
+                    this.beetlesToJump.push(beetle);
+                }
+            }
+
+            transition() {
+                let skippedBeetleJumps = 0;
+                let gameOver = (this.getWinner() != null);
+                while (this.beetlesToJump.length > 0 && !gameOver) {
+                    if (skippedBeetleJumps >= this.beetlesToJump.length) {
+                        break; // Prevent infinite loop
+                    }
+                    let beetle = this.beetlesToJump[skippedBeetleJumps];
+                    let destination = beetle.destination;
+                    let destinationSquare = this.board.getSquareByLocation(destination.row, destination.column);
+
+                    if (destinationSquare.beetles.length < destinationSquare.capacity) {
+                        this.makeBeetleJump(beetle);
+                        skippedBeetleJumps = 0;
+                    } else {
+                        skippedBeetleJumps += 1;
+                    }
+                    gameOver = (this.getWinner() != null);
+                }
+            }
+
+            makeBeetleJump(beetle) {
+                let currentSquare = this.board.getSquareByLocation(beetle.location.row, beetle.location.column);
+                let destinationSquare = this.board.getSquareByLocation(beetle.destination.row, beetle.destination.column);
+
+                let index = this.beetlesToJump.indexOf(beetle);
+                if (index > -1) {
+                    this.beetlesToJump.splice(index, 1);
+                }
+
+                beetle.jump();
+                let originalDestinationColor = destinationSquare.color;
+
+                currentSquare.removeBeetle(beetle);
+                destinationSquare.addBeetle(beetle);
+
+                if (this.gui) {
+                    this.gui.beetleMoved(this, currentSquare.location.row, currentSquare.location.column, destinationSquare.location.row, destinationSquare.location.column);
+                }
+
+                if (originalDestinationColor !== destinationSquare.color) {
+                    for (let squareBeetle of destinationSquare.beetles) {
+                        if (squareBeetle !== beetle) {
+                            if (this.gui) {
+                                this.gui.setBeetleColor(this, squareBeetle.id, beetle.color);
+                            }
+                        }
+                    }
+                }
+                this.evaluateSquare(destinationSquare);
+            }
+
+            getWinner() {
+                if (this.moves.length < 3) {
+                    return null;
+                }
+                let redSquares = this.board.getSquaresByColor("red");
+                let blueSquares = this.board.getSquaresByColor("blue");
+                if (redSquares.length === 0) {
+                    return "blue";
+                }
+                if (blueSquares.length === 0) {
+                    return "red";
+                }
+                return null;
+            }
+
+            resetGame() {
+                this.constructor(this.board.dimension, this.gui);
+            }
+        }
+
+        class GameGui {
+            constructor(dimension = 11) {
+                this.dimension = dimension;
+                this.game = null;
+                this.boardElement = document.getElementById('game-board');
+                this.boardElement.innerHTML = '';
+                this.boardSquares = [];
+                this.circles = [];
+                this.lastMoveSquare = null;
+
+                this.initBoard();
+                this.game = new Game(this.dimension, this);
+
+                this.updateTurnDisplay();
+            }
+
+            initBoard() {
+                this.boardElement.style.gridTemplateRows = `repeat(${this.dimension}, 1fr)`;
+                this.boardElement.style.gridTemplateColumns = `repeat(${this.dimension}, 1fr)`;
+                this.boardElement.style.width = '500px';
+                this.boardElement.style.height = '500px';
+
+                for (let row = 0; row < this.dimension; row++) {
+                    for (let column = 0; column < this.dimension; column++) {
+                        let square = document.createElement('div');
+                        square.classList.add('square');
+                        square.dataset.row = row;
+                        square.dataset.column = column;
+                        square.addEventListener('click', (event) => this.onSquareClick(event));
+                        this.boardElement.appendChild(square);
+                        this.boardSquares.push(square);
+                    }
+                }
+            }
+
+            onSquareClick(event) {
+                let square = event.currentTarget;
+                let row = parseInt(square.dataset.row);
+                let column = parseInt(square.dataset.column);
+
+                if (!this.game.checkMove(row, column)) {
+                    return;
+                }
+
+                this.doMove(row, column);
+            }
+
+            doMove(row, column) {
+                if (this.lastMoveSquare) {
+                    this.lastMoveSquare.style.outline = '';
+                }
+                this.game.doMove(row, column);
+            }
+
+            updateTurnDisplay() {
+                let turnDisplay = document.getElementById('turn-display');
+                turnDisplay.textContent = `${this.game.turn.charAt(0).toUpperCase() + this.game.turn.slice(1)}'s turn`;
+                document.title = `Beetle Battle - ${this.game.turn}'s turn`;
+            }
+
+            turnChanged(sender, color) {
+                this.game = sender; // Set the game instance
+                this.updateTurnDisplay();
+                this.highlightValidMoves(color);
+            }
+
+            beetleMoved(sender, sourceRow, sourceColumn, destRow, destColumn) {
+                this.updateSquare(sourceRow, sourceColumn);
+                this.updateSquare(destRow, destColumn);
+            }
+
+            newBeetleAdded(sender, beetleId, color, row, column) {
+                this.addBeetle(beetleId, color, row, column);
+                this.updateSquare(row, column);
+                this.lastMoveSquare = this.getSquareElement(row, column);
+                this.lastMoveSquare.style.outline = `3px solid ${color}`;
+            }
+
+            setBeetleColor(sender, beetleId, color) {
+                let beetleElement = this.circles[beetleId];
+                if (beetleElement) {
+                    beetleElement.style.backgroundColor = color;
+                }
+            }
+
+            announceWinner(sender, color) {
+                this.game = sender; // Set the game instance
+                setTimeout(() => {
+                    alert(`The winner is ${color}!`);
+                    this.game.resetGame();
+                    this.updateAllSquares();
+                    this.updateTurnDisplay();
+                }, 100);
+            }
+
+            addBeetle(beetleId, color, row, column) {
+                let squareElement = this.getSquareElement(row, column);
+                let beetleElement = document.createElement('div');
+                beetleElement.classList.add('beetle');
+                beetleElement.style.backgroundColor = color;
+                beetleElement.style.width = '12px';
+                beetleElement.style.height = '12px';
+                beetleElement.style.borderRadius = '50%';
+                beetleElement.style.position = 'absolute';
+                beetleElement.style.left = '50%';
+                beetleElement.style.top = '50%';
+                beetleElement.style.transform = 'translate(-50%, -50%)';
+
+                squareElement.appendChild(beetleElement);
+                this.circles[beetleId] = beetleElement;
+            }
+
+            updateSquare(row, column) {
+                let square = this.game.board.getSquareByLocation(row, column);
+                let squareElement = this.getSquareElement(row, column);
+
+                while (squareElement.firstChild) {
+                    squareElement.removeChild(squareElement.firstChild);
+                }
+
+                let beetles = square.beetles;
+                let numBeetles = beetles.length;
+                if (numBeetles === 0) {
+                    return;
+                }
+                let positions = this.getBeetlePositions(numBeetles);
+                for (let i = 0; i < numBeetles; i++) {
+                    let beetle = beetles[i];
+                    let beetleElement = this.circles[beetle.id];
+                    if (!beetleElement) {
+                        beetleElement = document.createElement('div');
+                        beetleElement.classList.add('beetle');
+                        beetleElement.style.width = '12px';  // Adjusted size
+                        beetleElement.style.height = '12px';
+                        beetleElement.style.borderRadius = '50%';
+                        beetleElement.style.position = 'absolute';
+                        this.circles[beetle.id] = beetleElement;
+                    }
+                    beetleElement.style.backgroundColor = beetle.color;
+                    beetleElement.style.left = positions[i].left;
+                    beetleElement.style.top = positions[i].top;
+                    squareElement.appendChild(beetleElement);
+                }
+            }
+
+            updateAllSquares() {
+                for (let row = 0; row < this.dimension; row++) {
+                    for (let column = 0; column < this.dimension; column++) {
+                        this.updateSquare(row, column);
+                    }
+                }
+            }
+
+            getBeetlePositions(numBeetles) {
+                let positions = [];
+                switch (numBeetles) {
+                    case 1:
+                        positions.push({ left: '50%', top: '50%' });
+                        break;
+                    case 2:
+                        positions.push({ left: '35%', top: '35%' });
+                        positions.push({ left: '65%', top: '65%' });
+                        break;
+                    case 3:
+                        positions.push({ left: '50%', top: '30%' });
+                        positions.push({ left: '35%', top: '65%' });
+                        positions.push({ left: '65%', top: '65%' });
+                        break;
+                    case 4:
+                        positions.push({ left: '35%', top: '35%' });
+                        positions.push({ left: '65%', top: '35%' });
+                        positions.push({ left: '35%', top: '65%' });
+                        positions.push({ left: '65%', top: '65%' });
+                        break;
+                    default:
+                        positions.push({ left: '50%', top: '50%' });
+                        break;
+                }
+                return positions;
+            }
+
+            highlightValidMoves(color) {
+                // Set all squares to white
+                for (let square of this.boardSquares) {
+                    square.style.backgroundColor = 'white';
+                }
+
+                let validSquares = this.game.getPossibleMoves();
+                let validLocations = validSquares.map(loc => `${loc.row},${loc.column}`);
+
+                for (let square of this.boardSquares) {
+                    let row = parseInt(square.dataset.row);
+                    let column = parseInt(square.dataset.column);
+                    let key = `${row},${column}`;
+                    if (!validLocations.includes(key)) {
+                        square.style.backgroundColor = 'lightgray';
+                    }
+                }
+            }
+
+            getSquareElement(row, column) {
+                return this.boardSquares[row * this.dimension + column];
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            new GameGui(11);
+        });
+    </script>
+</body>
+</html>
