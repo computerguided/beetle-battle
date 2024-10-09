@@ -37,6 +37,12 @@
             position: absolute;
             transform: translate(-50%, -50%);
         }
+
+        .highlighted {
+            outline: 3px solid;
+            z-index: 1; /* Bring to front */
+        }
+
     </style>
 </head>
 <body>
@@ -446,8 +452,16 @@
             newBeetleAdded(sender, beetleId, color, row, column) {
                 this.addBeetle(beetleId, color, row, column);
                 this.updateSquare(row, column);
+
+                // Remove previous highlight if any
+                if (this.lastMoveSquare) {
+                    this.lastMoveSquare.classList.remove('highlighted');
+                    this.lastMoveSquare.style.outlineColor = '';
+                }
+
                 this.lastMoveSquare = this.getSquareElement(row, column);
-                this.lastMoveSquare.style.outline = `3px solid ${color}`;
+                this.lastMoveSquare.classList.add('highlighted');
+                this.lastMoveSquare.style.outlineColor = color;
             }
 
             setBeetleColor(sender, beetleId, color) {
