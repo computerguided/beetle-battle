@@ -25,4 +25,6 @@ This will create an executable in the `dist` folder. On OS X this is the ``Beetl
 
 ## HTML version
 
-**Click [here](https://htmlpreview.github.io/?https://raw.githubusercontent.com/computerguided/beetle-battle/refs/heads/main/beetle_battle.html)) to run the game in your browser.**
+An HTML/CSS/JavaScipt version of the 11x11 2-player version of the game was made.
+
+**Click [here](https://htmlpreview.github.io/?https://raw.githubusercontent.com/computerguided/beetle-battle/refs/heads/main/beetle_battle.html) to run the game in your browser.**
