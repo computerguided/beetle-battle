@@ -23,6 +23,9 @@ $ python3 -m PyInstaller "Beetle Battle.spec"
 
 This will create an executable in the `dist` folder. On OS X this is the ``Beetle Battle.app`` package which is an macOS app that can be executed and copied in your applications folder.
 
+## Limited version
+A limitited version of a 11x11 2 player version is implemented in [beetle_battle.py](beetle_battle.py).
+
 ## HTML version
 
 An HTML/CSS/JavaScipt version of the 11x11 2-player version of the game was made.
