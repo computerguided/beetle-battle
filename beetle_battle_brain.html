@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Beetle Battle — Learning Machine</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#101613; --panel:#18211c; --panel2:#0e1411; --line:#2b3a31;
+  --ink:#ecf2ea; --dim:#93a396; --amber:#e8b54d; --amber2:#f5d489;
+  --red:#e04f3f; --blue:#4f8fdd;
+  --paper:#f3eddc; --paper-dim:#ddd5bd; --paper-line:#23271f;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:
+    radial-gradient(1200px 500px at 70% -10%, #1a2620 0%, transparent 60%),
+    var(--bg);
+  color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,sans-serif;
+  font-size:15.5px; line-height:1.55;
+}
+main{max-width:1040px;margin:0 auto;padding:0 18px 90px}
+header{max-width:1040px;margin:0 auto;padding:46px 18px 6px}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.28em;color:var(--amber);text-transform:uppercase}
+h1{font-family:"Fraunces",serif;font-weight:700;font-size:clamp(34px,5.6vw,58px);line-height:1.02;margin:.25em 0 .2em;letter-spacing:-.01em}
+h1 .r{color:var(--red)} h1 .b{color:var(--blue)}
+.sub{color:var(--dim);max-width:62ch;margin:0}
+.sub em{color:var(--ink);font-style:normal}
+
+section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 22px 26px;margin-top:26px}
+.sec-tag{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.24em;color:var(--amber);text-transform:uppercase;margin-bottom:6px}
+section h2{font-family:"Fraunces",serif;font-weight:700;font-size:26px;margin:0 0 4px}
+.sec-note{color:var(--dim);margin:0 0 18px;max-width:70ch}
+
+/* controls */
+.controls{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;margin-bottom:18px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+select,input[type=number]{
+  background:var(--panel2);border:1px solid var(--line);color:var(--ink);
+  font-family:"IBM Plex Mono",monospace;font-size:14px;border-radius:8px;padding:9px 10px;min-width:120px
+}
+input[type=number]{width:140px}
+select:focus,input:focus,button:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
+.btn{
+  font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:600;letter-spacing:.04em;
+  border-radius:9px;padding:11px 18px;cursor:pointer;border:1px solid var(--line);
+  background:var(--panel2);color:var(--ink);transition:transform .06s ease, background .15s
+}
+.btn:hover{background:#15201a}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--amber);border-color:var(--amber);color:#1d1607}
+.btn.primary:hover{background:var(--amber2)}
+.btn.danger{color:#ffb1a6;border-color:#5a2c25}
+.btn[disabled]{opacity:.38;pointer-events:none}
+details.adv{margin:-4px 0 18px}
+details.adv summary{cursor:pointer;color:var(--dim);font-family:"IBM Plex Mono",monospace;font-size:12px}
+.persist{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin:-6px 0 16px;
+  padding:11px 13px;background:var(--panel2);border:1px solid var(--line);border-radius:10px}
+.persist-tag{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-right:2px}
+.persist-msg{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--amber2);margin-left:4px}
+details.adv .controls{margin-top:12px;margin-bottom:0}
+
+/* telemetry */
+.progress{height:9px;background:var(--panel2);border:1px solid var(--line);border-radius:99px;overflow:hidden}
+.progress>i{display:block;height:100%;width:0%;background:linear-gradient(90deg,#9c7424,var(--amber));transition:width .12s linear}
+.prog-text{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--dim);margin:7px 2px 0;min-height:1.3em}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:16px 0}
+.tile{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.tile b{display:block;font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:21px;color:var(--amber2)}
+.tile span{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:760px){.duo{grid-template-columns:1fr}}
+.card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px}
+.card h3{margin:0 0 10px;font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);font-weight:600}
+canvas#chart{width:100%;height:170px;display:block}
+
+/* learned weights — the "brain" gauge */
+.wrow{display:grid;grid-template-columns:minmax(120px,170px) 1fr 56px;gap:10px;align-items:center;margin:7px 0;font-size:13px}
+.wrow .nm{color:var(--ink)}
+.wrow .nm small{display:block;color:var(--dim);font-size:11px;line-height:1.3}
+.wbar{position:relative;height:10px;background:#0a0f0c;border-radius:99px;overflow:hidden}
+.wbar::before{content:'';position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--line)}
+.wbar i{position:absolute;top:1px;bottom:1px;border-radius:99px;background:var(--amber);min-width:2px}
+.wbar i.neg{background:#c2604f}
+.wrow .val{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--dim);text-align:right}
+
+/* play area */
+.arena{display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start}
+.bench{flex:1 1 340px;max-width:560px}
+#board{
+  width:100%;aspect-ratio:1;display:grid;
+  grid-template-columns:repeat(var(--n,5),1fr);grid-template-rows:repeat(var(--n,5),1fr);
+  background:var(--paper);border:3px solid #0b0e0c;border-radius:6px;
+  box-shadow:0 18px 40px rgba(0,0,0,.45), inset 0 0 0 1px #cfc6ab;
+  user-select:none;touch-action:manipulation;
+}
+.square{position:relative;border:1px solid var(--paper-line);cursor:pointer}
+.square.invalid{background:var(--paper-dim);cursor:default}
+.square.lastR{box-shadow:inset 0 0 0 3px var(--red)}
+.square.lastB{box-shadow:inset 0 0 0 3px var(--blue)}
+.dot{
+  position:absolute;width:23%;aspect-ratio:1;border-radius:50%;
+  transform:translate(-50%,-50%);box-shadow:0 1px 3px rgba(0,0,0,.4);
+  animation:pop .16s ease-out;
+}
+@keyframes pop{from{scale:.3}}
+.dot.r{background:radial-gradient(circle at 34% 28%, #ff9a86, #cd3322 64%);border:1px solid #6e0f06}
+.dot.b{background:radial-gradient(circle at 34% 28%, #9cc6ff, #2f6cc9 64%);border:1px solid #0e3a78}
+.cnum{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:11px;color:#1c1c14;pointer-events:none}
+.square.boom::after{
+  content:'';position:absolute;inset:4%;border-radius:14%;
+  border:3px solid var(--amber);pointer-events:none;
+  animation:boom .38s ease-out forwards;
+}
+@keyframes boom{from{opacity:1;transform:scale(.55)}to{opacity:0;transform:scale(1.22)}}
+@media(prefers-reduced-motion:reduce){.dot,.square.boom::after{animation:none}}
+
+.side{flex:1 1 260px;min-width:250px;display:flex;flex-direction:column;gap:14px}
+#status{font-family:"Fraunces",serif;font-size:21px;font-weight:700;line-height:1.25;min-height:2.4em}
+#status.think::after{content:'…';animation:dots 1.2s steps(4) infinite}
+@keyframes dots{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
+.scoreline{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--dim)}
+.scoreline b{color:var(--ink)}
+.radio-row{display:flex;gap:8px;flex-wrap:wrap}
+.radio-row label{
+  display:flex;align-items:center;gap:7px;background:var(--panel2);border:1px solid var(--line);
+  border-radius:9px;padding:9px 12px;cursor:pointer;font-family:"IBM Plex Mono",monospace;font-size:12.5px
+}
+.radio-row input{accent-color:var(--amber)}
+.swatch{width:11px;height:11px;border-radius:50%;display:inline-block}
+.swatch.r{background:var(--red)} .swatch.b{background:var(--blue)}
+.btn-row{display:flex;gap:9px;flex-wrap:wrap}
+.note{font-size:13px;color:var(--dim)}
+
+footer{max-width:1040px;margin:36px auto 0;padding:0 18px 50px;color:var(--dim);font-size:13px}
+footer .rule{border-top:1px solid var(--line);padding-top:18px}
+footer code{font-family:"IBM Plex Mono",monospace;color:var(--amber2);font-size:12px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Field notes · self-play · temporal-difference learning</div>
+  <h1>Beetle Bat<span class="r">t</span><span class="b">l</span>e, taught by itself</h1>
+  <p class="sub">The original game shipped with a hand-tuned heuristic. Here the computer is given <em>no opening knowledge at all</em> — it plays against itself, learns a value function from its own wins and losses, and then you sit down across the board from whatever it has become.</p>
+</header>
+
+<main>
+
+<section id="train-sec">
+  <div class="sec-tag">Step 1 · Training</div>
+  <h2>Let the machine practice</h2>
+  <p class="sec-note">Choose how many games it may play against itself. Every move of every game nudges ten weights — material, territory, corners, exposure, chain potential — toward whatever actually wins.</p>
+
+  <div class="controls">
+    <div class="field">
+      <label for="dimSel">Board</label>
+      <select id="dimSel">
+        <option value="3">3 × 3</option>
+        <option value="5" selected>5 × 5</option>
+        <option value="7">7 × 7</option>
+        <option value="9">9 × 9</option>
+        <option value="11">11 × 11</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="gamesInput">Self-play games</label>
+      <input id="gamesInput" type="number" min="1" max="100000" step="100" value="1000">
+    </div>
+    <button class="btn primary" id="btnTrain">Start training</button>
+    <button class="btn danger" id="btnStop" disabled>Stop</button>
+    <button class="btn" id="btnReset">Forget everything</button>
+  </div>
+
+  <div class="persist">
+    <span class="persist-tag">Keep this brain</span>
+    <button class="btn" id="btnExport">Export to file</button>
+    <button class="btn" id="btnImport">Import from file</button>
+    <button class="btn" id="btnSave" hidden>Quick-save</button>
+    <button class="btn" id="btnLoad" hidden>Quick-load</button>
+    <input type="file" id="fileInput" accept=".json,application/json" hidden>
+    <span class="persist-msg" id="persistMsg"></span>
+  </div>
+
+  <details class="adv">
+    <summary>Learning parameters</summary>
+    <div class="controls">
+      <div class="field"><label for="alphaIn">Learning rate α</label><input id="alphaIn" type="number" min="0.005" max="0.5" step="0.005" value="0.08"></div>
+      <div class="field"><label for="epsIn">Exploration ε (start)</label><input id="epsIn" type="number" min="0" max="1" step="0.05" value="0.30"></div>
+      <div class="field"><label for="evalIn">Eval games per checkpoint</label><input id="evalIn" type="number" min="0" max="200" step="4" value="24"></div>
+    </div>
+  </details>
+
+  <div class="progress"><i id="progFill"></i></div>
+  <div class="prog-text" id="progText">Idle — the brain currently knows nothing.</div>
+
+  <div class="tiles">
+    <div class="tile"><b id="statTrained">0</b><span>games trained</span></div>
+    <div class="tile"><b id="statWin">—</b><span>win rate vs random</span></div>
+    <div class="tile"><b id="statLen">—</b><span>avg game length</span></div>
+    <div class="tile"><b id="statEps">—</b><span>exploration ε</span></div>
+  </div>
+
+  <div class="duo">
+    <div class="card">
+      <h3>Strength over training · vs a random player</h3>
+      <canvas id="chart" width="640" height="170"></canvas>
+    </div>
+    <div class="card">
+      <h3>What it has learned · weight per board feature</h3>
+      <div id="weightsBox"></div>
+    </div>
+  </div>
+</section>
+
+<section id="play-sec">
+  <div class="sec-tag">Step 2 · The match</div>
+  <h2>Now try to beat it</h2>
+  <p class="sec-note">Place a beetle on an empty square or one you already own. Fill a square to its capacity — the number of neighbours — and the beetles explode outward, converting everything they land on. Eliminate every enemy beetle to win.</p>
+
+  <div class="arena">
+    <div class="bench"><div id="board" aria-label="game board"></div></div>
+    <div class="side">
+      <div class="card">
+        <div id="status">Press “New game” when the brain is ready.</div>
+        <div class="scoreline" id="beetleLine"></div>
+        <div class="scoreline" id="scoreLine">Match score — You <b>0</b> · Machine <b>0</b></div>
+      </div>
+      <div class="radio-row" role="radiogroup" aria-label="choose your colour">
+        <label><input type="radio" name="side" value="1" checked><span class="swatch r"></span>Play red · move first</label>
+        <label><input type="radio" name="side" value="2"><span class="swatch b"></span>Play blue · move second</label>
+      </div>
+      <div class="btn-row">
+        <button class="btn primary" id="btnNew">New game</button>
+        <button class="btn" id="btnWatch">Watch it play itself</button>
+      </div>
+      <div class="note" id="playNote">An untrained machine plays at random. Train it above, then come back.</div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="rule">
+    <p><strong>Method.</strong> Afterstate TD(0) self-play. The value of a position is <code>σ(w·f)</code> — a sigmoid over ten normalised board features — read as the mover’s probability of winning. After each of its own moves the agent updates its previous prediction toward the new one (ε-greedy exploration, decaying), and toward 1 / 0 at a win / loss. Play uses the same one-ply greedy search the original engine used, only with learned weights instead of hand-tuned ones.</p>
+    <p>A learning-lab remake of <code>computerguided/beetle-battle</code> by Fred Dijkstra — same rules, same red and blue beetles, new brain.</p>
+  </div>
+</footer>
+
+<script>
+(function(){
+'use strict';
+const IS_BROWSER = typeof document !== 'undefined';
+
+/* ============================================================
+   ENGINE — identical rules to the original game_engine.py:
+   place on empty or own square; a square's capacity = its
+   neighbour count; reaching capacity makes all beetles jump
+   out, one per neighbour, converting what they land on; the
+   cascade stops the moment a winner exists (only possible
+   from move 3 on), which also prevents infinite saturation.
+   ============================================================ */
+function makeGeometry(n){
+  const nn = n*n, cap = new Int8Array(nn), nbr = new Array(nn);
+  for (let r=0;r<n;r++) for (let c=0;c<n;c++){
+    const i = r*n+c, L = [];
+    if (r>0) L.push(i-n);
+    if (r<n-1) L.push(i+n);
+    if (c>0) L.push(i-1);
+    if (c<n-1) L.push(i+1);
+    nbr[i]=L; cap[i]=L.length;
+  }
+  return {n,nn,cap,nbr};
+}
+function newState(geo){ return {cnt:new Int8Array(geo.nn), own:new Int8Array(geo.nn), b:[0,0,0], moves:0}; }
+function cloneState(s){ return {cnt:s.cnt.slice(), own:s.own.slice(), b:s.b.slice(), moves:s.moves}; }
+function legalMoves(s,geo,p){
+  const out=[];
+  for (let i=0;i<geo.nn;i++) if (s.cnt[i]===0 || s.own[i]===p) out.push(i);
+  return out;
+}
+function winnerOf(s){
+  if (s.moves>=3){ if (s.b[1]===0) return 2; if (s.b[2]===0) return 1; }
+  return 0;
+}
+function applyMove(s, geo, idx, p, steps){
+  const cap=geo.cap, nbr=geo.nbr, o=3-p;
+  s.moves++;
+  s.cnt[idx]++; s.own[idx]=p; s.b[p]++;
+  if (steps) steps.push({boom:-1, cnt:s.cnt.slice(), own:s.own.slice()});
+  if (s.cnt[idx] >= cap[idx]){
+    const q=[idx]; let guard=0;
+    while (q.length){
+      if (s.moves>=3 && s.b[o]===0) break;   // winner ends the cascade
+      if (++guard>40000) break;              // hard safety
+      const i=q.shift();
+      if (s.cnt[i] < cap[i]) continue;
+      s.cnt[i]-=cap[i];
+      if (s.cnt[i]===0) s.own[i]=0;
+      const L=nbr[i];
+      for (let k=0;k<L.length;k++){
+        const j=L[k];
+        if (s.cnt[j]>0 && s.own[j]!==p){ s.b[s.own[j]]-=s.cnt[j]; s.b[p]+=s.cnt[j]; }
+        s.own[j]=p; s.cnt[j]++;   // beetle arrives from square i — moved, not created
+        if (s.cnt[j]>=cap[j]) q.push(j);
+      }
+      if (s.cnt[i]>=cap[i]) q.push(i);
+      if (steps) steps.push({boom:i, cnt:s.cnt.slice(), own:s.own.slice()});
+    }
+  }
+  return winnerOf(s);
+}
+
+/* ============================================================
+   VALUE FUNCTION — ten features, all from the mover's side,
+   all normalised so a brain trained on one board size still
+   makes sense on another.
+   ============================================================ */
+const FEATURES=[
+  ['Baseline','prior before looking at the board'],
+  ['Beetle advantage','more beetles than the opponent'],
+  ['Territory','share of squares controlled'],
+  ['Own loaded squares','one beetle from exploding'],
+  ['Their loaded squares','opponent about to explode'],
+  ['Corner control','capacity-2 squares held'],
+  ['Edge control','capacity-3 squares held'],
+  ['Own exposure','own squares beside enemy loaded ones'],
+  ['Pressure on them','their squares beside own loaded ones'],
+  ['Chain potential','connected loaded squares (cascades)'],
+];
+const NF=FEATURES.length;
+function zeroWeights(){ return new Float64Array(NF); }
+
+function chainScore(s, geo, p, critical){
+  const nn=geo.nn, nbr=geo.nbr, seen=new Uint8Array(nn);
+  let total=0;
+  for (let i=0;i<nn;i++){
+    if (seen[i] || !critical[i] || s.own[i]!==p) continue;
+    let size=0; const st=[i]; seen[i]=1;
+    while (st.length){
+      const u=st.pop(); size++;
+      const L=nbr[u];
+      for (let k=0;k<L.length;k++){
+        const v=L[k];
+        if (!seen[v] && critical[v] && s.own[v]===p){ seen[v]=1; st.push(v); }
+      }
+    }
+    if (size>=2) total+=size;
+  }
+  return total;
+}
+function featuresOf(s, geo, p){
+  const n=geo.n, nn=geo.nn, cap=geo.cap, nbr=geo.nbr, o=3-p;
+  let sqP=0,sqO=0,critP=0,critO=0,corP=0,corO=0,edgP=0,edgO=0,vulP=0,vulO=0;
+  const critical=new Uint8Array(nn);
+  for (let i=0;i<nn;i++){
+    const c=s.cnt[i]; if (c===0) continue;
+    const w=s.own[i], crit=(c===cap[i]-1);
+    if (crit) critical[i]=1;
+    if (w===p){ sqP++; if (crit) critP++; if (cap[i]===2) corP++; else if (cap[i]===3) edgP++; }
+    else      { sqO++; if (crit) critO++; if (cap[i]===2) corO++; else if (cap[i]===3) edgO++; }
+  }
+  for (let i=0;i<nn;i++){
+    if (s.cnt[i]===0) continue;
+    const w=s.own[i], L=nbr[i];
+    for (let k=0;k<L.length;k++){
+      const j=L[k];
+      if (critical[j] && s.own[j]!==w){ if (w===p) vulP++; else vulO++; break; }
+    }
+  }
+  const chP=chainScore(s,geo,p,critical), chO=chainScore(s,geo,o,critical);
+  const f=new Float64Array(NF);
+  f[0]=1;
+  f[1]=(s.b[p]-s.b[o])/(2*nn);
+  f[2]=(sqP-sqO)/nn;
+  f[3]=critP/nn;
+  f[4]=critO/nn;
+  f[5]=(corP-corO)/4;
+  f[6]=(edgP-edgO)/Math.max(1,4*(n-2));
+  f[7]=vulP/nn;
+  f[8]=vulO/nn;
+  f[9]=(chP-chO)/nn;
+  return f;
+}
+function valueOf(w,f){
+  let z=0; for (let i=0;i<NF;i++) z+=w[i]*f[i];
+  return 1/(1+Math.exp(-z));
+}
+function tdUpdate(w,f,target,alpha){
+  const v=valueOf(w,f), g=(target-v)*v*(1-v)*alpha;
+  for (let i=0;i<NF;i++) w[i]+=g*f[i];
+}
+
+/* ============================================================
+   AGENT — afterstate search: simulate every legal move
+   (cascade included), score the result, ε-greedy pick.
+   ============================================================ */
+function chooseMove(s, geo, p, w, eps){
+  const moves=legalMoves(s,geo,p);
+  const evald=new Array(moves.length);
+  let best=[], bestVal=-2;
+  for (let k=0;k<moves.length;k++){
+    const ns=cloneState(s);
+    const win=applyMove(ns,geo,moves[k],p);
+    const f=featuresOf(ns,geo,p);
+    const v=(win===p)?1:valueOf(w,f);
+    evald[k]={m:moves[k], ns, f, v, win};
+    if (v>bestVal+1e-9){ bestVal=v; best=[k]; }
+    else if (v>bestVal-1e-9) best.push(k);
+  }
+  const pick=(eps>0 && Math.random()<eps)
+    ? (Math.random()*evald.length)|0
+    : best[(Math.random()*best.length)|0];
+  return evald[pick];
+}
+
+function trainOneGame(geo, w, eps, alpha, moveCap){
+  let s=newState(geo);
+  const last=[null,null,null];
+  let p=1, winner=0, mv=0;
+  while (mv<moveCap){
+    const ch=chooseMove(s,geo,p,w,eps);
+    if (last[p]) tdUpdate(w, last[p].f, ch.v, alpha);   // bootstrap toward newest estimate
+    s=ch.ns; last[p]={f:ch.f}; mv++;
+    if (ch.win){
+      winner=ch.win;
+      tdUpdate(w, last[winner].f, 1, alpha);
+      const l=3-winner;
+      if (last[l]) tdUpdate(w, last[l].f, 0, alpha);
+      break;
+    }
+    p=3-p;
+  }
+  if (!winner){
+    if (last[1]) tdUpdate(w,last[1].f,0.5,alpha);
+    if (last[2]) tdUpdate(w,last[2].f,0.5,alpha);
+  }
+  return {winner, length:mv};
+}
+
+function evalVsRandom(geo, w, games){
+  if (games<=0) return NaN;
+  let score=0;
+  const moveCap=5*geo.nn;
+  for (let g=0; g<games; g++){
+    const agent=(g%2)+1;
+    let s=newState(geo), p=1, winner=0, mv=0;
+    while (mv<moveCap){
+      if (p===agent){ const ch=chooseMove(s,geo,p,w,0); s=ch.ns; winner=ch.win; }
+      else { const L=legalMoves(s,geo,p); winner=applyMove(s,geo,L[(Math.random()*L.length)|0],p); }
+      mv++;
+      if (winner) break;
+      p=3-p;
+    }
+    if (winner===agent) score+=1;
+    else if (!winner) score+=0.5;
+  }
+  return score/games;
+}
+
+async function trainAgent(w, opts, hooks){
+  hooks=hooks||{};
+  const geo=makeGeometry(opts.dim);
+  const G=opts.games, moveCap=5*geo.nn;
+  const doEval=opts.evalGames>0;
+  const evalEvery=doEval?Math.max(1,Math.round(G/14)):Infinity;
+  const points=[], lens=[];
+  const off=opts.startCount||0;
+  let lastYield=Date.now();
+  if (doEval) points.push({g:off, wr:evalVsRandom(geo,w,opts.evalGames)});
+  for (let g=1; g<=G; g++){
+    const eps=opts.epsStart+(opts.epsEnd-opts.epsStart)*(g-1)/Math.max(1,G-1);
+    const r=trainOneGame(geo,w,eps,opts.alpha,moveCap);
+    lens.push(r.length); if (lens.length>300) lens.shift();
+    let evald=false;
+    if (doEval && (g%evalEvery===0 || g===G)){
+      points.push({g:off+g, wr:evalVsRandom(geo,w,opts.evalGames)}); evald=true;
+    }
+    const now=Date.now();
+    if (evald || now-lastYield>40 || g===G){
+      if (hooks.progress) hooks.progress({done:g,total:G,eps,
+        avgLen:lens.reduce((a,b)=>a+b,0)/lens.length, points});
+      if (now-lastYield>40){ lastYield=now; if (hooks.tick) await hooks.tick(); }
+      if (hooks.stopped && hooks.stopped()) return {points, done:g, stopped:true};
+    }
+  }
+  return {points, done:G, stopped:false};
+}
+
+/* node export for testing */
+if (!IS_BROWSER){
+  if (typeof module!=='undefined') module.exports={
+    makeGeometry,newState,cloneState,legalMoves,applyMove,winnerOf,
+    featuresOf,valueOf,zeroWeights,chooseMove,trainOneGame,evalVsRandom,trainAgent,FEATURES
+  };
+  return;
+}
+
+/* ============================================================
+   UI
+   ============================================================ */
+const $=id=>document.getElementById(id);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const App={
+  w:zeroWeights(), trained:0, training:false, stopFlag:false,
+  geo:null, state:null, cells:[], human:1, mode:'idle',
+  last:-1, lastP:0, busy:false, score:{you:0, ai:0}, points:[]
+};
+
+/* ---- board rendering ---- */
+function buildBoard(dim){
+  App.geo=makeGeometry(dim);
+  const board=$('board');
+  board.style.setProperty('--n',dim);
+  board.innerHTML='';
+  App.cells=[];
+  for (let i=0;i<App.geo.nn;i++){
+    const d=document.createElement('div');
+    d.className='square';
+    d.addEventListener('click',()=>onCell(i));
+    board.appendChild(d); App.cells.push(d);
+  }
+}
+function ringPositions(c){
+  if (c===1) return [[50,50]];
+  const m=Math.min(c,8), R=(c===2)?20:26, out=[];
+  for (let k=0;k<m;k++){
+    const a=-Math.PI/2 + 2*Math.PI*k/m;
+    out.push([50+R*Math.cos(a), 50+R*Math.sin(a)]);
+  }
+  return out;
+}
+function paint(cnt, own, boom){
+  const humanTurn = App.mode==='playing' && !App.busy && currentTurn()===App.human;
+  for (let i=0;i<App.geo.nn;i++){
+    const el=App.cells[i], c=cnt[i], o=own[i];
+    el.classList.toggle('invalid', humanTurn && !(c===0 || o===App.human));
+    el.classList.toggle('lastR', i===App.last && App.lastP===1);
+    el.classList.toggle('lastB', i===App.last && App.lastP===2);
+    let html='';
+    if (c>0){
+      const col=(o===1)?'r':'b';
+      for (const [x,y] of ringPositions(c))
+        html+='<span class="dot '+col+'" style="left:'+x+'%;top:'+y+'%"></span>';
+      if (c>4) html+='<span class="cnum">'+c+'</span>';
+    }
+    el.innerHTML=html;
+    if (i===boom){ el.classList.remove('boom'); void el.offsetWidth; el.classList.add('boom'); }
+  }
+}
+function countsFrom(cnt,own){
+  const b=[0,0,0];
+  for (let i=0;i<cnt.length;i++) if (cnt[i]>0) b[own[i]]+=cnt[i];
+  return b;
+}
+function beetleLine(b){
+  $('beetleLine').innerHTML='Beetles — <b style="color:var(--red)">red '+b[1]+'</b> · <b style="color:var(--blue)">blue '+b[2]+'</b>';
+}
+function currentTurn(){ return (App.state.moves%2===0)?1:2; }
+function setStatus(t,think){ const s=$('status'); s.textContent=t; s.classList.toggle('think',!!think); }
+
+/* ---- moves with cascade replay ---- */
+async function doMove(idx,p){
+  App.busy=true;
+  const steps=[];
+  const winner=applyMove(App.state, App.geo, idx, p, steps);
+  App.last=idx; App.lastP=p;
+  const interval=steps.length>26?42:95;
+  for (let k=0;k<steps.length;k++){
+    paint(steps[k].cnt, steps[k].own, steps[k].boom);
+    beetleLine(countsFrom(steps[k].cnt, steps[k].own));
+    if (k<steps.length-1) await sleep(interval);
+  }
+  App.busy=false;
+  paint(App.state.cnt, App.state.own, -1);
+  beetleLine(App.state.b);
+  return winner;
+}
+function onCell(i){
+  if (App.mode!=='playing' || App.busy) return;
+  if (currentTurn()!==App.human) return;
+  if (!(App.state.cnt[i]===0 || App.state.own[i]===App.human)) return;
+  (async()=>{
+    const win=await doMove(i, App.human);
+    afterPly(win);
+  })();
+}
+function afterPly(win){
+  if (App.mode!=='playing') return;
+  if (win){ finishVsAI(win); return; }
+  if (currentTurn()!==App.human) aiTurn();
+  else setStatus('Your move.');
+}
+async function aiTurn(){
+  setStatus('The machine is thinking', true);
+  await sleep(320);
+  if (App.mode!=='playing') return;
+  const ai=3-App.human;
+  const ch=chooseMove(App.state, App.geo, ai, App.w, 0);
+  const win=await doMove(ch.m, ai);
+  afterPly(win);
+}
+function finishVsAI(winner){
+  App.mode='over';
+  paint(App.state.cnt, App.state.own, -1);
+  const youWon=(winner===App.human);
+  if (youWon) App.score.you++; else App.score.ai++;
+  $('scoreLine').innerHTML='Match score — You <b>'+App.score.you+'</b> · Machine <b>'+App.score.ai+'</b>';
+  setStatus(youWon?'You win. The student is not ready.':'The machine wins. Train it less, or play it better.');
+}
+function newGame(){
+  if (App.training) return;
+  App.mode='over'; // halt any watch loop
+  buildBoard(+$('dimSel').value);
+  App.state=newState(App.geo);
+  App.last=-1; App.lastP=0; App.busy=false;
+  App.human=+document.querySelector('input[name=side]:checked').value;
+  App.mode='playing';
+  $('btnWatch').textContent='Watch it play itself';
+  beetleLine([0,0,0]);
+  paint(App.state.cnt, App.state.own, -1);
+  if (currentTurn()===App.human) setStatus('Your move — place a beetle.');
+  else aiTurn();
+}
+async function watchToggle(){
+  if (App.mode==='watching'){ App.mode='over'; $('btnWatch').textContent='Watch it play itself'; setStatus('Exhibition stopped.'); return; }
+  if (App.training) return;
+  buildBoard(+$('dimSel').value);
+  App.state=newState(App.geo);
+  App.last=-1; App.lastP=0; App.busy=false;
+  App.mode='watching';
+  $('btnWatch').textContent='Stop watching';
+  beetleLine([0,0,0]);
+  paint(App.state.cnt, App.state.own, -1);
+  setStatus('Self-play exhibition — red vs blue, same brain.');
+  while (App.mode==='watching'){
+    const p=currentTurn();
+    const ch=chooseMove(App.state, App.geo, p, App.w, 0.04);
+    const win=await doMove(ch.m, p);
+    if (App.mode!=='watching') break;
+    if (win){
+      App.mode='over';
+      $('btnWatch').textContent='Watch it play itself';
+      setStatus('Exhibition over — '+(win===1?'red':'blue')+' wins.');
+      break;
+    }
+    await sleep(230);
+  }
+}
+
+/* ---- training UI ---- */
+function fmtPct(x){ return isNaN(x)?'—':Math.round(x*100)+'%'; }
+function drawChart(points){
+  const cv=$('chart'), ctx=cv.getContext('2d');
+  const W=cv.width, H=cv.height, padL=34, padR=8, padT=10, padB=20;
+  ctx.clearRect(0,0,W,H);
+  ctx.font='10px "IBM Plex Mono",monospace';
+  ctx.fillStyle='#6f7f72'; ctx.strokeStyle='#2b3a31';
+  const y=v=>padT+(1-v)*(H-padT-padB);
+  for (const v of [0,0.5,1]){
+    ctx.beginPath(); ctx.moveTo(padL,y(v)); ctx.lineTo(W-padR,y(v)); ctx.stroke();
+    ctx.fillText(Math.round(v*100)+'%', 4, y(v)+3);
+  }
+  if (!points || points.length<2){
+    ctx.fillText('train with eval checkpoints to see the curve', padL+8, H/2);
+    return;
+  }
+  const g0=points[0].g, g1=points[points.length-1].g;
+  const x=g=>padL+( (g1===g0)?0:(g-g0)/(g1-g0) )*(W-padL-padR);
+  ctx.strokeStyle='#e8b54d'; ctx.lineWidth=2; ctx.beginPath();
+  points.forEach((pt,i)=>{ const X=x(pt.g), Y=y(pt.wr); i?ctx.lineTo(X,Y):ctx.moveTo(X,Y); });
+  ctx.stroke();
+  ctx.fillStyle='#f5d489';
+  points.forEach(pt=>{ ctx.beginPath(); ctx.arc(x(pt.g),y(pt.wr),2.6,0,7); ctx.fill(); });
+  ctx.fillStyle='#6f7f72';
+  ctx.fillText(g0+' games', padL, H-6);
+  const lbl=g1+' games';
+  ctx.fillText(lbl, W-padR-ctx.measureText(lbl).width, H-6);
+}
+function renderWeights(){
+  const box=$('weightsBox');
+  const maxW=Math.max(0.4, ...Array.from(App.w).map(Math.abs));
+  let html='';
+  for (let i=0;i<NF;i++){
+    const v=App.w[i], pct=Math.min(50, Math.abs(v)/maxW*50);
+    const bar=(v>=0)
+      ? '<i style="left:50%;width:'+pct+'%"></i>'
+      : '<i class="neg" style="right:50%;width:'+pct+'%"></i>';
+    html+='<div class="wrow"><div class="nm">'+FEATURES[i][0]+'<small>'+FEATURES[i][1]+'</small></div>'
+        + '<div class="wbar">'+bar+'</div>'
+        + '<div class="val">'+(v>=0?'+':'')+v.toFixed(2)+'</div></div>';
+  }
+  box.innerHTML=html;
+}
+function setButtons(){
+  const t=App.training;
+  $('btnTrain').disabled=t; $('btnStop').disabled=!t;
+  $('btnReset').disabled=t; $('btnNew').disabled=t; $('btnWatch').disabled=t;
+  $('dimSel').disabled=t; $('gamesInput').disabled=t;
+  ['btnSave','btnLoad','btnExport','btnImport'].forEach(id=>{ const b=$(id); if(b) b.disabled=t; });
+}
+async function startTraining(){
+  if (App.training) return;
+  const games=Math.max(1, Math.min(100000, Math.floor(+$('gamesInput').value||0)));
+  $('gamesInput').value=games;
+  const dim=+$('dimSel').value;
+  App.training=true; App.stopFlag=false; setButtons();
+  if (App.mode==='watching' || App.mode==='playing') { App.mode='idle'; setStatus('Training in progress — the board reopens when it’s done.'); }
+  $('progText').textContent='Warming up…';
+  const res=await trainAgent(App.w, {
+    dim, games,
+    alpha:+$('alphaIn').value || 0.08,
+    epsStart:+$('epsIn').value || 0.3,
+    epsEnd:0.04,
+    evalGames:Math.floor(+$('evalIn').value||0),
+    startCount:App.trained
+  },{
+    progress:info=>{
+      App.points=App.points.concat(info.points.filter(pt=>!App.points.some(q=>q.g===pt.g)));
+      $('progFill').style.width=(100*info.done/info.total)+'%';
+      $('progText').textContent='Self-play game '+info.done+' of '+info.total+' on '+dim+'×'+dim;
+      $('statTrained').textContent=App.trained+info.done;
+      $('statEps').textContent=info.eps.toFixed(2);
+      $('statLen').textContent=info.avgLen.toFixed(0)+' moves';
+      const pts=App.points;
+      if (pts.length) $('statWin').textContent=fmtPct(pts[pts.length-1].wr);
+      drawChart(pts); renderWeights();
+    },
+    tick:()=>new Promise(r=>setTimeout(r,0)),
+    stopped:()=>App.stopFlag
+  });
+  App.trained+=res.done;
+  App.training=false; setButtons();
+  $('statTrained').textContent=App.trained;
+  drawChart(App.points); renderWeights();
+  $('progFill').style.width='100%';
+  $('progText').textContent=res.stopped
+    ? 'Stopped after '+res.done+' games — everything learned so far is kept.'
+    : 'Training complete — '+App.trained+' games of experience total.';
+  $('playNote').textContent='This opponent has learned from '+App.trained+' self-play games on a '+dim+'×'+dim+' board.';
+  if (!res.stopped){
+    setStatus('The brain is trained. Choose a colour and press “New game”.');
+    $('play-sec').scrollIntoView({behavior:'smooth'});
+  }
+}
+function resetBrain(){
+  if (App.training) return;
+  App.w=zeroWeights(); App.trained=0; App.points=[];
+  $('statTrained').textContent='0';
+  $('statWin').textContent='—'; $('statLen').textContent='—'; $('statEps').textContent='—';
+  $('progFill').style.width='0%';
+  $('progText').textContent='Brain wiped — back to knowing nothing.';
+  $('playNote').textContent='An untrained machine plays at random. Train it above, then come back.';
+  drawChart([]); renderWeights();
+}
+
+/* ---- persistence: a brain is just 10 weights + a couple of counters ---- */
+const BRAIN_VERSION=1;
+function serializeBrain(){
+  return {
+    app:'beetle-battle-rl', version:BRAIN_VERSION,
+    features:FEATURES.map(f=>f[0]),
+    weights:Array.from(App.w), trained:App.trained, points:App.points,
+    savedAt:new Date().toISOString()
+  };
+}
+function applyBrain(d){
+  if (!d || !Array.isArray(d.weights) || d.weights.length!==NF)
+    throw new Error('not a beetle brain');
+  App.w=Float64Array.from(d.weights);
+  App.trained=d.trained||0;
+  App.points=Array.isArray(d.points)?d.points:[];
+  $('statTrained').textContent=App.trained;
+  $('statWin').textContent=App.points.length?fmtPct(App.points[App.points.length-1].wr):'—';
+  $('statEps').textContent='—'; $('statLen').textContent='—';
+  $('progFill').style.width=App.trained?'100%':'0%';
+  drawChart(App.points); renderWeights();
+  $('playNote').textContent=App.trained
+    ? 'Loaded a brain with '+App.trained+' games of experience.'
+    : 'An untrained machine plays at random. Train it above, then come back.';
+}
+function persistMsg(t){ $('persistMsg').textContent=t; }
+
+/* Export to a downloadable .json file — works everywhere, even offline */
+$('btnExport').addEventListener('click', ()=>{
+  if (App.training) return;
+  if (!App.trained){ persistMsg('Nothing to export yet — train first.'); return; }
+  const blob=new Blob([JSON.stringify(serializeBrain(),null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download='beetle-brain-'+App.trained+'games.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  persistMsg('Exported '+App.trained+' games of training.');
+});
+
+/* Import from a previously exported file */
+$('btnImport').addEventListener('click', ()=>{ if (!App.training) $('fileInput').click(); });
+$('fileInput').addEventListener('change', e=>{
+  const file=e.target.files[0]; if (!file) return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      applyBrain(JSON.parse(reader.result));
+      persistMsg('Imported '+App.trained+' games — ready to play or keep training.');
+      $('progText').textContent='Brain loaded from file — '+App.trained+' games of experience.';
+    }catch(err){ persistMsg('That file is not a valid beetle brain.'); }
+  };
+  reader.onerror=()=>persistMsg('Could not read that file.');
+  reader.readAsText(file);
+  e.target.value='';   // allow re-importing the same file
+});
+
+/* Quick-save / quick-load: one-click persistence when the artifact
+   provides cross-session storage (no file needed). */
+const hasStorage = typeof window!=='undefined' && window.storage && typeof window.storage.set==='function';
+if (hasStorage){
+  $('btnSave').hidden=false; $('btnLoad').hidden=false;
+  $('btnSave').addEventListener('click', async ()=>{
+    if (App.training) return;
+    if (!App.trained){ persistMsg('Nothing to save yet — train first.'); return; }
+    try{ await window.storage.set('beetle-rl-brain', JSON.stringify(serializeBrain()), false);
+      persistMsg('Quick-saved — reload the page and quick-load to restore.'); }
+    catch(e){ persistMsg('Quick-save failed.'); }
+  });
+  $('btnLoad').addEventListener('click', async ()=>{
+    if (App.training) return;
+    try{
+      const r=await window.storage.get('beetle-rl-brain');
+      applyBrain(JSON.parse(r.value));
+      persistMsg('Quick-loaded '+App.trained+' games of training.');
+      $('progText').textContent='Brain restored — '+App.trained+' games of experience.';
+    }catch(e){ persistMsg('No quick-saved brain found yet.'); }
+  });
+}
+
+/* ---- wire up ---- */
+$('btnTrain').addEventListener('click', startTraining);
+$('btnStop').addEventListener('click', ()=>{ App.stopFlag=true; });
+$('btnReset').addEventListener('click', resetBrain);
+$('btnNew').addEventListener('click', newGame);
+$('btnWatch').addEventListener('click', watchToggle);
+$('dimSel').addEventListener('change', ()=>{
+  if (App.mode!=='playing' && App.mode!=='watching' && !App.training){
+    buildBoard(+$('dimSel').value);
+    App.state=newState(App.geo);
+    paint(App.state.cnt, App.state.own, -1);
+  }
+});
+
+buildBoard(5);
+App.state=newState(App.geo);
+paint(App.state.cnt, App.state.own, -1);
+beetleLine([0,0,0]);
+drawChart([]); renderWeights();
+})();
+</script>
+</body>
+</html>

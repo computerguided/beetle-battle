@@ -28,6 +28,14 @@ A limitited version of a 11x11 2 player version is implemented in [beetle_battle
 
 ## HTML version
 
-An HTML/CSS/JavaScipt version of the 11x11 2-player version of the game was made.
+An HTML/CSS/JavaScipt version of the game was made.
 
 **Click [here](https://htmlpreview.github.io/?https://raw.githubusercontent.com/computerguided/beetle-battle/refs/heads/main/beetle_battle.html) to run the game in your browser.**
+
+## Smart Beetles
+
+An interactive HTML version is avialable in which you can train an algorithm using reinforcement learning and play against it.
+
+**Click [here](https://htmlpreview.github.io/?https://raw.githubusercontent.com/computerguided/beetle-battle/refs/heads/main/beetle_battle_brain.html) to run the game in your browser.**
+
+A detailed explaination of the algorithm can be found [here](https://htmlpreview.github.io/?https://raw.githubusercontent.com/computerguided/beetle-battle/refs/heads/main/beetle_battle_learning_design.html).

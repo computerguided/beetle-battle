@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design Document · The Beetle Battle Learning Algorithm</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f4ecd6; --paper2:#fbf6e7; --fig:#f0e7cd; --line:#d9cda7; --line2:#cabf9c;
+  --ink:#22291f; --soft:#5d6650; --faint:#8a8a72;
+  --gold:#9a6612; --gold2:#b9851f; --forest:#2a4733;
+  --red:#c0392b; --redink:#8f2418; --blue:#2f6cc9; --blueink:#1d4c97;
+  --mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,sans-serif; font-size:16px; line-height:1.62;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--gold); text-decoration:none}
+a:hover{text-decoration:underline}
+sup a{font-family:var(--mono); font-size:.72em; padding:0 1px}
+
+/* ---------- masthead ---------- */
+.masthead{border-bottom:2px solid var(--ink); background:var(--paper2)}
+.masthead .inner{max-width:1180px; margin:0 auto; padding:30px 32px 24px}
+.kicker{font-family:var(--mono); font-size:11px; letter-spacing:.32em; text-transform:uppercase; color:var(--gold); margin:0 0 12px}
+.masthead h1{font-family:"Fraunces",serif; font-weight:700; font-size:clamp(30px,4.4vw,50px); line-height:1.04; letter-spacing:-.01em; margin:0 0 4px}
+.masthead h1 .r{color:var(--red)} .masthead h1 .b{color:var(--blue)}
+.masthead .tagline{font-family:"Fraunces",serif; font-style:italic; font-size:clamp(17px,2.2vw,21px); color:var(--soft); margin:0}
+.meta{display:flex; flex-wrap:wrap; gap:6px 26px; margin-top:18px; font-family:var(--mono); font-size:12px; color:var(--soft)}
+.meta b{color:var(--ink); font-weight:600}
+
+/* ---------- layout ---------- */
+.wrap{max-width:1180px; margin:0 auto; padding:0 32px; display:grid; grid-template-columns:255px 1fr; gap:46px; align-items:start}
+nav.toc{position:sticky; top:0; max-height:100vh; overflow:auto; padding:30px 6px 60px; border-right:1px solid var(--line); font-size:13.5px}
+nav.toc h2{font-family:var(--mono); font-size:10.5px; letter-spacing:.22em; text-transform:uppercase; color:var(--faint); margin:0 0 12px}
+nav.toc ol{list-style:none; margin:0; padding:0; counter-reset:sec}
+nav.toc>ol>li{counter-increment:sec; margin:0 0 2px}
+nav.toc>ol>li>a::before{content:counter(sec) ".\00a0"; color:var(--faint); font-family:var(--mono)}
+nav.toc a{display:block; padding:4px 10px; border-radius:6px; color:var(--soft); line-height:1.35}
+nav.toc a:hover{background:var(--fig); text-decoration:none; color:var(--ink)}
+nav.toc a.active{background:var(--ink); color:var(--paper2)}
+nav.toc a.active::before{color:var(--gold2)}
+nav.toc ol ol{padding-left:16px; counter-reset:sub}
+nav.toc ol ol li{counter-increment:sub}
+nav.toc ol ol a::before{content:counter(sec) "." counter(sub) "\00a0"; color:var(--faint); font-family:var(--mono); font-size:.9em}
+nav.toc .plain>a::before{content:"" !important}
+
+main{min-width:0; padding:34px 0 120px; max-width:760px}
+.toc-toggle{display:none}
+
+/* ---------- typography ---------- */
+section{scroll-margin-top:14px; margin:0 0 14px}
+section>h2{font-family:"Fraunces",serif; font-weight:700; font-size:30px; line-height:1.12; letter-spacing:-.01em; margin:48px 0 6px; padding-top:14px}
+section:first-of-type>h2{margin-top:8px}
+.secnum{font-family:var(--mono); font-size:.62em; font-weight:500; color:var(--gold); vertical-align:middle; margin-right:.5em; letter-spacing:.04em}
+h3{font-family:"Fraunces",serif; font-weight:600; font-size:21px; margin:30px 0 4px}
+h3 .secnum{font-size:.66em}
+p{margin:12px 0}
+.lead{font-size:18px; line-height:1.6; color:#33402c}
+strong{font-weight:600}
+em{font-style:italic}
+.term{font-family:var(--mono); font-size:.9em; color:var(--forest); background:var(--fig); padding:1px 5px; border-radius:4px}
+ul,ol.body{margin:12px 0; padding-left:22px}
+ul li,ol.body li{margin:6px 0}
+.callout{background:var(--paper2); border:1px solid var(--line); border-left:3px solid var(--gold); border-radius:0 8px 8px 0; padding:14px 18px; margin:20px 0; font-size:15px}
+.callout .ct{font-family:var(--mono); font-size:10.5px; letter-spacing:.18em; text-transform:uppercase; color:var(--gold); display:block; margin-bottom:5px}
+hr.rule{border:none; border-top:1px solid var(--line); margin:30px 0}
+
+/* ---------- code & math ---------- */
+code{font-family:var(--mono); font-size:.86em; background:var(--fig); padding:1px 5px; border-radius:4px; color:var(--forest)}
+pre{background:#222a1f; color:#e9ecd9; border-radius:9px; padding:16px 18px; overflow:auto; font-family:var(--mono); font-size:13px; line-height:1.6; margin:18px 0}
+pre .c{color:#8fa07d} pre .k{color:#e8b54d} pre .s{color:#c5d9a0}
+.eq{background:var(--paper2); border:1px solid var(--line); border-radius:9px; padding:16px 20px; margin:18px 0; text-align:center; font-size:17px; overflow-x:auto}
+.eq .v{font-family:"Fraunces",serif; font-style:italic}
+.eq .op{margin:0 .35em; color:var(--soft)}
+.eqn{display:block; font-family:var(--mono); font-size:11px; color:var(--faint); margin-top:7px; text-align:center; letter-spacing:.04em}
+.tight{margin:6px 0}
+
+/* ---------- figures ---------- */
+figure{margin:26px 0; background:var(--paper2); border:1px solid var(--line); border-radius:11px; padding:18px 18px 14px}
+figure svg{display:block; width:100%; height:auto}
+figcaption{font-size:13.5px; color:var(--soft); margin-top:12px; padding-top:11px; border-top:1px solid var(--line); line-height:1.5}
+figcaption b{font-family:var(--mono); font-size:11.5px; letter-spacing:.06em; color:var(--gold); text-transform:uppercase; margin-right:7px}
+.fsvg{font-family:var(--mono); font-size:11px}
+.fsvg .lbl{font-family:"IBM Plex Sans",sans-serif; font-size:12px; fill:var(--ink)}
+.fsvg .sub{fill:var(--soft); font-size:10.5px}
+
+/* ---------- tables ---------- */
+.tbl{width:100%; border-collapse:collapse; margin:20px 0; font-size:14px}
+.tbl th,.tbl td{text-align:left; padding:9px 11px; border-bottom:1px solid var(--line); vertical-align:top}
+.tbl th{font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--soft); border-bottom:1.5px solid var(--line2)}
+.tbl td code{background:none; padding:0; color:var(--forest)}
+.tbl tr:hover td{background:var(--paper2)}
+.tbl .num{font-family:var(--mono); white-space:nowrap}
+
+/* ---------- references ---------- */
+ol.refs{font-size:14px; padding-left:0; list-style:none; counter-reset:ref}
+ol.refs li{counter-increment:ref; position:relative; padding:9px 0 9px 40px; border-bottom:1px solid var(--line); line-height:1.5}
+ol.refs li::before{content:"["counter(ref)"]"; position:absolute; left:0; top:9px; font-family:var(--mono); font-size:12px; color:var(--gold)}
+ol.refs .src{color:var(--soft)}
+:target{animation:flash 1.6s ease}
+@keyframes flash{0%,40%{background:#f3e2ad}100%{background:transparent}}
+
+footer{border-top:2px solid var(--ink); background:var(--paper2); margin-top:40px}
+footer .inner{max-width:1180px; margin:0 auto; padding:24px 32px 50px; font-size:13px; color:var(--soft)}
+
+/* ---------- responsive ---------- */
+@media(max-width:880px){
+  .wrap{grid-template-columns:1fr; gap:0; padding:0 22px}
+  nav.toc{position:static; max-height:none; border-right:none; border-bottom:1px solid var(--line); padding:14px 0}
+  nav.toc.collapsed ol{display:none}
+  .toc-toggle{display:block; width:100%; text-align:left; background:var(--fig); border:1px solid var(--line); border-radius:8px; padding:11px 14px; font-family:var(--mono); font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink); cursor:pointer; margin:14px 0}
+  main{padding-top:18px}
+  .masthead .inner,footer .inner{padding-left:22px; padding-right:22px}
+}
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <div class="inner">
+    <p class="kicker">Design Document · Self-Learning Game AI</p>
+    <h1>Teaching Beetle Bat<span class="r">t</span><span class="b">l</span>e to Itself</h1>
+    <p class="tagline">An afterstate temporal-difference learning algorithm, from first principles to working code.</p>
+    <div class="meta">
+      <span>Version <b>1.0</b></span>
+      <span>Status <b>Implemented</b></span>
+      <span>Date <b>June 2026</b></span>
+      <span>Subject <b>beetle-battle, learning edition</b></span>
+      <span>Audience <b>engineers &amp; the curious</b></span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<nav class="toc" id="toc">
+  <button class="toc-toggle" id="tocToggle" aria-expanded="true">Contents ▾</button>
+  <h2>Contents</h2>
+  <ol>
+    <li><a href="#s1">Introduction &amp; scope</a></li>
+    <li><a href="#s2">Why learning, not search</a></li>
+    <li><a href="#s3">The game as a Markov decision process</a></li>
+    <li><a href="#s4">Afterstates: choosing the right thing to value</a></li>
+    <li><a href="#s5">The value function</a>
+      <ol>
+        <li><a href="#s5-1">Features in, win-probability out</a></li>
+        <li><a href="#s5-2">The logistic squashing function</a></li>
+        <li><a href="#s5-3">The ten features</a></li>
+      </ol>
+    </li>
+    <li><a href="#s6">Temporal-difference learning</a>
+      <ol>
+        <li><a href="#s6-1">Prediction by bootstrapping</a></li>
+        <li><a href="#s6-2">The TD(0) update rule</a></li>
+        <li><a href="#s6-3">Gradient of the logistic value</a></li>
+        <li><a href="#s6-4">Rewards &amp; terminal targets</a></li>
+      </ol>
+    </li>
+    <li><a href="#s7">Self-play</a></li>
+    <li><a href="#s8">Exploration vs exploitation</a></li>
+    <li><a href="#s9">The training loop</a></li>
+    <li><a href="#s10">Playing a move</a></li>
+    <li><a href="#s11">Evaluation &amp; instrumentation</a></li>
+    <li><a href="#s12">Generalisation across board sizes</a></li>
+    <li><a href="#s13">Persistence: saving a brain</a></li>
+    <li><a href="#s14">Limitations &amp; extensions</a></li>
+    <li class="plain"><a href="#glossary">Glossary</a></li>
+    <li class="plain"><a href="#refs">References</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<p class="lead">The original <a href="https://github.com/computerguided/beetle-battle">Beetle Battle</a> shipped with a hand-tuned evaluation function: a human decided that corners were worth three points, edges two, and so on.<sup><a href="#ref1" id="ref1b">1</a></sup> This document describes the learning edition, in which the computer is given <em>none</em> of that knowledge. It plays thousands of games against itself, observes which positions tend to lead to victory, and discovers its own evaluation function. The method is <strong>afterstate temporal-difference learning under self-play</strong> &mdash; a direct descendant of Arthur Samuel&rsquo;s 1959 checkers program<sup><a href="#ref4">4</a></sup> and Gerald Tesauro&rsquo;s TD-Gammon.<sup><a href="#ref5">5</a></sup> Everything here is implemented in a single self-contained HTML file; this document explains exactly what that code does and why.</p>
+
+<section id="s1">
+<h2><span class="secnum">1</span>Introduction &amp; scope</h2>
+
+<p>Beetle Battle is a two-player game on an <span class="term">n&times;n</span> grid. Players alternately place a beetle on an empty square or one they already own. Every square has a <em>capacity</em> equal to its number of orthogonal neighbours &mdash; two in a corner, three on an edge, four in the interior. The instant a square holds beetles equal to its capacity, it &ldquo;explodes&rdquo;: one beetle jumps to each neighbour, and any enemy beetles those neighbours hold are converted to the mover&rsquo;s colour. Those neighbours may now be over capacity, so they explode too, and a single placement can set off a long chain reaction. A player wins when the opponent has no beetles left.<sup><a href="#ref1">1</a></sup></p>
+
+<p>That chain reaction is the whole problem. It makes the game thrilling to watch and very hard to evaluate, because the consequence of a move is not local &mdash; it can ripple across the entire board. This document covers, in order: why we learn an evaluation function rather than search for one (<a href="#s2">&sect;2</a>); how the game is framed as a sequential decision problem (<a href="#s3">&sect;3</a>); the representation we actually learn to value (<a href="#s4">&sect;4</a>&ndash;<a href="#s5">5</a>); the learning rule itself (<a href="#s6">&sect;6</a>); how self-play, exploration, and the training loop fit together (<a href="#s7">&sect;7</a>&ndash;<a href="#s9">9</a>); and how the trained agent plays, is measured, generalises, and is saved (<a href="#s10">&sect;10</a>&ndash;<a href="#s13">13</a>). <a href="#s14">&sect;14</a> is candid about what this simple method cannot do.</p>
+
+<div class="callout"><span class="ct">Design goals</span>
+The agent must <strong>learn from zero domain knowledge</strong>, train fast enough to run live in a browser tab (thousands of games in seconds, no GPU), produce an evaluation function a person can <strong>read and interpret</strong>, and remain faithful to the original game&rsquo;s rules and one-ply move-selection structure. These goals rule out heavyweight deep networks and favour a small, transparent, linear model.</div>
+</section>
+
+<section id="s2">
+<h2><span class="secnum">2</span>Why learning, not search</h2>
+
+<p>A natural first instinct for any board game is brute-force lookahead: try every move, every reply, every counter-reply, and pick the line that ends best. This is the minimax idea behind classical chess engines.<sup><a href="#ref7">7</a></sup> It collapses quickly here. On a 5&times;5 board the opening player has 25 legal placements; the reply has ~24; and the <em>branching factor</em> stays high for the whole game because almost every square is always a legal move. Worse, a single move can trigger a cascade that rewrites a large fraction of the board, so positions do not simplify the way they do in chess endgames. Searching even a handful of plies ahead on an 11&times;11 board means examining an astronomical number of positions &mdash; the <em>combinatorial explosion</em> that Bellman named the &ldquo;curse of dimensionality.&rdquo;<sup><a href="#ref6">6</a></sup> The original game&rsquo;s own manual flags this explicitly as the reason a heuristic is required.<sup><a href="#ref1">1</a></sup></p>
+
+<p>The escape route, known since Shannon and Samuel, is to <em>not</em> search to the end. Instead, look only one move ahead, and replace the missing deep search with a learned function that estimates &mdash; from the shape of a position alone &mdash; how good it is. Samuel&rsquo;s checkers program did exactly this in 1959: it adjusted the weights of a board-evaluation polynomial by playing against itself, and it improved.<sup><a href="#ref4">4</a></sup> Our agent is a small, modern restatement of that idea. The art is entirely in (a) what features describe a position, and (b) how the weights on those features are learned.</p>
+</section>
+
+<section id="s3">
+<h2><span class="secnum">3</span>The game as a Markov decision process</h2>
+
+<p>To learn from experience we frame play as a <strong>Markov decision process</strong> (MDP), the standard formalism of reinforcement learning.<sup><a href="#ref2">2</a></sup> At each step there is a <em>state</em> (the full board: how many beetles on each square and who owns them, plus whose turn it is), the mover chooses an <em>action</em> (a legal placement), and the environment responds with a new state &mdash; here, the board <em>after</em> the placement and any resulting cascade. The defining &ldquo;Markov&rdquo; property holds: the board contains everything needed to decide the next move; how the position was reached is irrelevant.</p>
+
+<figure>
+<svg viewBox="0 0 560 200" class="fsvg" role="img" aria-label="Agent and environment interaction loop">
+  <rect x="60" y="64" width="150" height="72" rx="10" fill="#fbf6e7" stroke="#22291f" stroke-width="1.5"/>
+  <text x="135" y="96" text-anchor="middle" class="lbl" font-weight="600">Agent</text>
+  <text x="135" y="114" text-anchor="middle" class="sub">choose a move</text>
+  <rect x="350" y="64" width="150" height="72" rx="10" fill="#fbf6e7" stroke="#22291f" stroke-width="1.5"/>
+  <text x="425" y="96" text-anchor="middle" class="lbl" font-weight="600">Game</text>
+  <text x="425" y="114" text-anchor="middle" class="sub">place + cascade</text>
+  <defs><marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#9a6612"/></marker></defs>
+  <path d="M210,84 C270,60 290,60 350,84" fill="none" stroke="#9a6612" stroke-width="1.6" marker-end="url(#ah)"/>
+  <text x="280" y="56" text-anchor="middle" class="sub" fill="#9a6612">action a&#8348; (a placement)</text>
+  <path d="M350,116 C290,140 270,140 210,116" fill="none" stroke="#2a4733" stroke-width="1.6" marker-end="url(#ah)"/>
+  <text x="280" y="158" text-anchor="middle" class="sub" fill="#2a4733">new state s&#8348;&#8330;&#8321; &nbsp;+&nbsp; reward r&#8348;&#8330;&#8321;</text>
+  <text x="280" y="186" text-anchor="middle" class="sub">reward is 0 every step until someone wins</text>
+</svg>
+<figcaption><b>Fig. 1</b> The reinforcement-learning loop. The agent acts, the game transitions and returns a reward. In Beetle Battle the reward is <em>sparse</em>: zero on every move, and &plusmn;1 only at the very end. All the learning signal must therefore be propagated backwards from the final outcome &mdash; which is precisely what temporal-difference learning does.</figcaption>
+</figure>
+
+<p>The reward structure is deliberately minimal and is what makes this a hard credit-assignment problem. The agent is told nothing about whether an individual move was clever. It receives a reward of <strong>+1 if it eventually wins, 0 if it loses</strong>, and nothing in between. The central difficulty &mdash; how to tell which of the forty moves in a winning game actually deserve credit &mdash; is solved in <a href="#s6">&sect;6</a>.</p>
+
+<p>The game is <strong>two-player and zero-sum</strong>: one player&rsquo;s win is the other&rsquo;s loss. We handle this with a single value function always written from the <em>mover&rsquo;s</em> point of view, and by having the two seats share one set of weights (<a href="#s7">&sect;7</a>). There is no chance element: transitions are deterministic, so the environment is an opponent rather than a dice cup.</p>
+</section>
+
+<section id="s4">
+<h2><span class="secnum">4</span>Afterstates: choosing the right thing to value</h2>
+
+<p>Before we can learn a value, we must decide <em>what carries the value</em>. There are three classic choices,<sup><a href="#ref2">2</a></sup> and picking the right one is the single most important design decision in this system.</p>
+
+<figure>
+<svg viewBox="0 0 620 215" class="fsvg" role="img" aria-label="State-value, action-value and afterstate backups compared">
+  <defs><marker id="ah2" markerWidth="8" markerHeight="8" refX="6" refY="2.6" orient="auto"><path d="M0,0 L6,2.6 L0,5.2 Z" fill="#5d6650"/></marker></defs>
+  <!-- state value -->
+  <text x="100" y="22" text-anchor="middle" class="lbl" font-weight="600">State value V(s)</text>
+  <circle cx="100" cy="48" r="9" fill="#22291f"/>
+  <line x1="100" y1="57" x2="60" y2="92" stroke="#5d6650" stroke-width="1.3" marker-end="url(#ah2)"/>
+  <line x1="100" y1="57" x2="100" y2="92" stroke="#5d6650" stroke-width="1.3" marker-end="url(#ah2)"/>
+  <line x1="100" y1="57" x2="140" y2="92" stroke="#5d6650" stroke-width="1.3" marker-end="url(#ah2)"/>
+  <circle cx="56" cy="100" r="7" fill="none" stroke="#22291f" stroke-width="1.3"/>
+  <circle cx="100" cy="100" r="7" fill="none" stroke="#22291f" stroke-width="1.3"/>
+  <circle cx="144" cy="100" r="7" fill="none" stroke="#22291f" stroke-width="1.3"/>
+  <text x="100" y="128" text-anchor="middle" class="sub">value a position;</text>
+  <text x="100" y="142" text-anchor="middle" class="sub">needs a model to</text>
+  <text x="100" y="156" text-anchor="middle" class="sub">compare moves</text>
+  <!-- action value -->
+  <text x="310" y="22" text-anchor="middle" class="lbl" font-weight="600">Action value Q(s,a)</text>
+  <circle cx="310" cy="48" r="9" fill="#22291f"/>
+  <line x1="310" y1="57" x2="270" y2="86" stroke="#5d6650" stroke-width="1.3"/>
+  <line x1="310" y1="57" x2="310" y2="86" stroke="#5d6650" stroke-width="1.3"/>
+  <line x1="310" y1="57" x2="350" y2="86" stroke="#5d6650" stroke-width="1.3"/>
+  <rect x="262" y="86" width="16" height="11" rx="2" fill="#9a6612"/>
+  <rect x="302" y="86" width="16" height="11" rx="2" fill="#9a6612"/>
+  <rect x="342" y="86" width="16" height="11" rx="2" fill="#9a6612"/>
+  <text x="310" y="128" text-anchor="middle" class="sub">value every (state,</text>
+  <text x="310" y="142" text-anchor="middle" class="sub">move) pair &mdash; many</text>
+  <text x="310" y="156" text-anchor="middle" class="sub">more things to learn</text>
+  <!-- afterstate -->
+  <text x="520" y="22" text-anchor="middle" class="lbl" font-weight="600">Afterstate value</text>
+  <circle cx="486" cy="44" r="9" fill="#c0392b"/>
+  <circle cx="486" cy="86" r="9" fill="#2f6cc9"/>
+  <line x1="495" y1="48" x2="540" y2="64" stroke="#5d6650" stroke-width="1.3" marker-end="url(#ah2)"/>
+  <line x1="495" y1="82" x2="540" y2="68" stroke="#5d6650" stroke-width="1.3" marker-end="url(#ah2)"/>
+  <circle cx="552" cy="66" r="8" fill="none" stroke="#22291f" stroke-width="1.6"/>
+  <text x="520" y="128" text-anchor="middle" class="sub">different moves that</text>
+  <text x="520" y="142" text-anchor="middle" class="sub">reach the SAME board</text>
+  <text x="520" y="156" text-anchor="middle" class="sub">share one value</text>
+  <text x="310" y="196" text-anchor="middle" class="sub" fill="#9a6612" font-style="italic">We use the afterstate: value the board immediately after the mover acts, before the opponent replies.</text>
+</svg>
+<figcaption><b>Fig. 2</b> Three ways to attach value. <em>State values</em> require a model to look one move ahead before you can compare options. <em>Action values</em> (Q-learning<sup><a href="#ref8">8</a></sup>) avoid that but must learn a separate number for every state&ndash;action pair. <em>Afterstate values</em> exploit a special feature of board games: many different placements can lead to identical resulting boards, and all such boards obviously have the same value. Learning the value of the resulting board is both cheaper and faster.</figcaption>
+</figure>
+
+<p>An <strong>afterstate</strong> (or &ldquo;post-decision state&rdquo;) is the board <em>after</em> the mover has placed a beetle and all cascades have resolved, but <em>before</em> the opponent moves. Because the rules are deterministic, the mover has complete control over which afterstate is produced by a given placement. This makes the agent&rsquo;s job clean: enumerate the legal moves, simulate each one to the afterstate it produces, score every resulting board with the value function, and choose the best. We never need to model the opponent&rsquo;s reply explicitly &mdash; that uncertainty is folded into the learned value of the afterstate itself. This is the representation Sutton &amp; Barto recommend for exactly this class of game,<sup><a href="#ref2">2</a></sup> and it mirrors how the original engine was already structured (copy the board, apply the move, score the result).<sup><a href="#ref1">1</a></sup></p>
+</section>
+
+<section id="s5">
+<h2><span class="secnum">5</span>The value function</h2>
+
+<h3 id="s5-1"><span class="secnum">5.1</span>Features in, win-probability out</h3>
+<p>The value function takes a board and returns a single number between 0 and 1, interpreted as the mover&rsquo;s probability of eventually winning. It works in two stages. First a hand-designed <em>feature extractor</em> reduces the raw board to a short vector <span class="eq" style="display:inline;padding:2px 8px;font-size:15px"><span class="v">f</span>(s) = (f<sub>0</sub>, f<sub>1</sub>, &hellip;, f<sub>9</sub>)</span> of ten numbers, each measuring one interpretable property (material, territory, corner control, and so on &mdash; see <a href="#s5-3">&sect;5.3</a>). Then those numbers are combined linearly with learned weights <span class="term">w</span> and passed through a squashing function.</p>
+
+<figure>
+<svg viewBox="0 0 620 150" class="fsvg" role="img" aria-label="Value function pipeline">
+  <defs><marker id="ah3" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#22291f"/></marker></defs>
+  <rect x="14" y="46" width="80" height="58" rx="8" fill="#f0e7cd" stroke="#22291f" stroke-width="1.3"/>
+  <text x="54" y="71" text-anchor="middle" class="sub">board</text>
+  <text x="54" y="87" text-anchor="middle" class="sub">s</text>
+  <line x1="96" y1="75" x2="128" y2="75" stroke="#22291f" stroke-width="1.3" marker-end="url(#ah3)"/>
+  <rect x="130" y="40" width="104" height="70" rx="8" fill="#fbf6e7" stroke="#22291f" stroke-width="1.3"/>
+  <text x="182" y="68" text-anchor="middle" class="lbl" font-weight="600" font-size="11">feature</text>
+  <text x="182" y="83" text-anchor="middle" class="lbl" font-weight="600" font-size="11">extractor</text>
+  <text x="182" y="99" text-anchor="middle" class="sub" font-size="9">10 numbers</text>
+  <line x1="236" y1="75" x2="268" y2="75" stroke="#22291f" stroke-width="1.3" marker-end="url(#ah3)"/>
+  <text x="252" y="66" text-anchor="middle" class="sub" fill="#9a6612">f(s)</text>
+  <rect x="270" y="40" width="120" height="70" rx="8" fill="#fbf6e7" stroke="#22291f" stroke-width="1.3"/>
+  <text x="330" y="70" text-anchor="middle" class="lbl" font-weight="600" font-size="11">weighted sum</text>
+  <text x="330" y="90" text-anchor="middle" class="sub" font-size="11">z = w &middot; f(s)</text>
+  <line x1="392" y1="75" x2="424" y2="75" stroke="#22291f" stroke-width="1.3" marker-end="url(#ah3)"/>
+  <text x="408" y="66" text-anchor="middle" class="sub" fill="#9a6612">z</text>
+  <rect x="426" y="40" width="104" height="70" rx="8" fill="#fbf6e7" stroke="#22291f" stroke-width="1.3"/>
+  <text x="478" y="70" text-anchor="middle" class="lbl" font-weight="600" font-size="11">sigmoid &sigma;</text>
+  <text x="478" y="90" text-anchor="middle" class="sub" font-size="10">squash to (0,1)</text>
+  <line x1="532" y1="75" x2="560" y2="75" stroke="#22291f" stroke-width="1.3" marker-end="url(#ah3)"/>
+  <rect x="562" y="46" width="48" height="58" rx="8" fill="#f0e7cd" stroke="#2a4733" stroke-width="1.6"/>
+  <text x="586" y="69" text-anchor="middle" class="sub" fill="#2a4733">P(win)</text>
+  <text x="586" y="86" text-anchor="middle" class="sub" fill="#2a4733">0&ndash;1</text>
+</svg>
+<figcaption><b>Fig. 3</b> The value-function pipeline. Only the weighted-sum stage contains learnable parameters &mdash; the ten weights in <code>w</code>. Everything the agent &ldquo;knows&rdquo; about Beetle Battle lives in those ten numbers, which is what makes the learned strategy legible (<a href="#s11">&sect;11</a>).</figcaption>
+</figure>
+
+<p>This is a <strong>linear function approximator with a logistic output</strong> &mdash; equivalently, logistic regression whose targets are supplied by reinforcement learning instead of a labelled dataset. Using a linear model (rather than a neural network) is a deliberate trade: it cannot represent arbitrarily subtle interactions between features, but it trains in milliseconds, never diverges catastrophically, and every weight can be read off and understood.</p>
+
+<h3 id="s5-2"><span class="secnum">5.2</span>The logistic squashing function</h3>
+<p>The weighted sum <span class="term">z = w &middot; f</span> can be any real number, but a probability must lie in <span class="term">(0,&nbsp;1)</span>. The <em>sigmoid</em> (logistic) function performs that mapping:<sup><a href="#ref9">9</a></sup></p>
+
+<div class="eq"><span class="v">&sigma;</span>(z) <span class="op">=</span> 1 / (1 + e<sup>&minus;z</sup>)<span class="eqn">maps any real number to the open interval (0, 1)</span></div>
+
+<figure>
+<svg viewBox="0 0 380 175" class="fsvg" role="img" aria-label="The sigmoid curve">
+  <line x1="46" y1="150" x2="352" y2="150" stroke="#cabf9c" stroke-width="1"/>
+  <line x1="193" y1="14" x2="193" y2="158" stroke="#cabf9c" stroke-width="1"/>
+  <line x1="46" y1="18" x2="352" y2="18" stroke="#e6dcc0" stroke-width="1" stroke-dasharray="3 3"/>
+  <line x1="46" y1="84" x2="352" y2="84" stroke="#e6dcc0" stroke-width="1" stroke-dasharray="3 3"/>
+  <text x="40" y="22" text-anchor="end" class="sub">1.0</text>
+  <text x="40" y="88" text-anchor="end" class="sub">0.5</text>
+  <text x="40" y="153" text-anchor="end" class="sub">0.0</text>
+  <text x="193" y="168" text-anchor="middle" class="sub">z = 0</text>
+  <text x="60" y="168" text-anchor="middle" class="sub" fill="#c0392b">losing</text>
+  <text x="330" y="168" text-anchor="middle" class="sub" fill="#2f6cc9">winning</text>
+  <circle cx="193" cy="84" r="3" fill="#9a6612"/>
+  <path d="M46.0,149.7 L50.9,149.6 L55.8,149.5 L60.7,149.4 L65.6,149.3 L70.5,149.1 L75.4,148.9 L80.3,148.7 L85.2,148.4 L90.1,148.0 L95.0,147.6 L99.9,147.1 L104.8,146.5 L109.7,145.7 L114.6,144.8 L119.5,143.7 L124.4,142.4 L129.3,140.9 L134.2,139.0 L139.1,136.8 L144.0,134.3 L148.9,131.3 L153.8,127.8 L158.7,123.9 L163.6,119.4 L168.5,114.5 L173.4,109.1 L178.3,103.2 L183.2,97.0 L188.1,90.6 L193.0,84.0 L197.9,77.4 L202.8,71.0 L207.7,64.8 L212.6,58.9 L217.5,53.5 L222.4,48.6 L227.3,44.1 L232.2,40.2 L237.1,36.7 L242.0,33.7 L246.9,31.2 L251.8,29.0 L256.7,27.1 L261.6,25.6 L266.5,24.3 L271.4,23.2 L276.3,22.3 L281.2,21.5 L286.1,20.9 L291.0,20.4 L295.9,20.0 L300.8,19.6 L305.7,19.3 L310.6,19.1 L315.5,18.9 L320.4,18.7 L325.3,18.6 L330.2,18.5 L335.1,18.4 L340.0,18.3" fill="none" stroke="#9a6612" stroke-width="2.2"/>
+</svg>
+<figcaption><b>Fig. 4</b> The sigmoid. A neutral position (<code>z = 0</code>) maps to exactly 0.5 &mdash; a coin-flip. Strongly favourable feature sums saturate towards 1, unfavourable ones towards 0. The S-shape also gives the learning rule a useful property: updates are largest for uncertain positions near 0.5 and smallest for already-decided ones, automatically focusing learning where it matters (<a href="#s6-3">&sect;6.3</a>).</figcaption>
+</figure>
+
+<p>So the full value function is</p>
+<div class="eq"><span class="v">v</span>(s; <span class="v">w</span>) <span class="op">=</span> <span class="v">&sigma;</span><big>(</big> &sum;<sub>i</sub> w<sub>i</sub> f<sub>i</sub>(s) <big>)</big> <span class="op">&approx;</span> P( mover wins | board s )<span class="eqn">a linear combination of features, squashed into a probability</span></div>
+
+<h3 id="s5-3"><span class="secnum">5.3</span>The ten features</h3>
+<p>All features are computed <strong>from the mover&rsquo;s perspective</strong> (&ldquo;mine&rdquo; vs &ldquo;theirs&rdquo;), and all are <strong>normalised</strong> so their magnitudes are roughly comparable and largely independent of board size &mdash; the property that lets one trained brain play on a board it never trained on (<a href="#s12">&sect;12</a>). A square is called <em>loaded</em> (the engine&rsquo;s term is <em>critical</em>) when it holds exactly one beetle fewer than its capacity, i.e. a single further beetle makes it explode.<sup><a href="#ref1">1</a></sup></p>
+
+<table class="tbl">
+  <thead><tr><th>#</th><th>Feature</th><th>Meaning &amp; normalisation</th></tr></thead>
+  <tbody>
+    <tr><td class="num">f&#8320;</td><td>Baseline (bias)</td><td>Constant <code>1</code>. Lets the model learn a default offset &mdash; e.g. a first-mover advantage.</td></tr>
+    <tr><td class="num">f&#8321;</td><td>Beetle advantage</td><td>(my beetles &minus; their beetles) / 2n&sup2;. Raw material.</td></tr>
+    <tr><td class="num">f&#8322;</td><td>Territory</td><td>(my squares &minus; their squares) / n&sup2;. Board control, independent of stacking.</td></tr>
+    <tr><td class="num">f&#8323;</td><td>Own loaded squares</td><td>my critical squares / n&sup2;. Latent offensive energy.</td></tr>
+    <tr><td class="num">f&#8324;</td><td>Their loaded squares</td><td>their critical squares / n&sup2;. Latent danger.</td></tr>
+    <tr><td class="num">f&#8325;</td><td>Corner control</td><td>(my corners &minus; their corners) / 4. Capacity-2 squares are hardest to dislodge.</td></tr>
+    <tr><td class="num">f&#8326;</td><td>Edge control</td><td>(my edges &minus; their edges) / 4(n&minus;2). Capacity-3 squares, the next most stable.</td></tr>
+    <tr><td class="num">f&#8327;</td><td>Own exposure</td><td>my squares adjacent to an enemy <em>loaded</em> square / n&sup2;. Beetles about to be captured.</td></tr>
+    <tr><td class="num">f&#8328;</td><td>Pressure on them</td><td>their squares adjacent to a <em>my</em> loaded square / n&sup2;. Capture threats I&rsquo;m making.</td></tr>
+    <tr><td class="num">f&#8329;</td><td>Chain potential</td><td>(my connected-loaded clusters &minus; theirs) / n&sup2;, summing clusters of size &ge;2. Cascade fuel.</td></tr>
+  </tbody>
+</table>
+
+<figure>
+<svg viewBox="0 0 560 230" class="fsvg" role="img" aria-label="Square capacities and a connected loaded chain on a 5x5 board">
+  <!-- left: capacities -->
+  <text x="130" y="16" text-anchor="middle" class="lbl" font-weight="600">Capacity = number of neighbours</text>
+  <g transform="translate(40,28)">
+    <!-- 5x5 grid 36px -->
+    <!-- generate cells -->
+    <g stroke="#22291f" stroke-width="1">
+    <!-- row0 -->
+    <rect x="0" y="0" width="36" height="36" fill="#f3dcd6"/><rect x="36" y="0" width="36" height="36" fill="#f7eccf"/><rect x="72" y="0" width="36" height="36" fill="#f7eccf"/><rect x="108" y="0" width="36" height="36" fill="#f7eccf"/><rect x="144" y="0" width="36" height="36" fill="#f3dcd6"/>
+    <rect x="0" y="36" width="36" height="36" fill="#f7eccf"/><rect x="36" y="36" width="36" height="36" fill="#dfe7f4"/><rect x="72" y="36" width="36" height="36" fill="#dfe7f4"/><rect x="108" y="36" width="36" height="36" fill="#dfe7f4"/><rect x="144" y="36" width="36" height="36" fill="#f7eccf"/>
+    <rect x="0" y="72" width="36" height="36" fill="#f7eccf"/><rect x="36" y="72" width="36" height="36" fill="#dfe7f4"/><rect x="72" y="72" width="36" height="36" fill="#dfe7f4"/><rect x="108" y="72" width="36" height="36" fill="#dfe7f4"/><rect x="144" y="72" width="36" height="36" fill="#f7eccf"/>
+    <rect x="0" y="108" width="36" height="36" fill="#f7eccf"/><rect x="36" y="108" width="36" height="36" fill="#dfe7f4"/><rect x="72" y="108" width="36" height="36" fill="#dfe7f4"/><rect x="108" y="108" width="36" height="36" fill="#dfe7f4"/><rect x="144" y="108" width="36" height="36" fill="#f7eccf"/>
+    <rect x="0" y="144" width="36" height="36" fill="#f3dcd6"/><rect x="36" y="144" width="36" height="36" fill="#f7eccf"/><rect x="72" y="144" width="36" height="36" fill="#f7eccf"/><rect x="108" y="144" width="36" height="36" fill="#f7eccf"/><rect x="144" y="144" width="36" height="36" fill="#f3dcd6"/>
+    </g>
+    <g class="sub" text-anchor="middle" font-size="12" fill="#22291f">
+    <text x="18" y="23">2</text><text x="54" y="23">3</text><text x="90" y="23">3</text><text x="126" y="23">3</text><text x="162" y="23">2</text>
+    <text x="18" y="59">3</text><text x="54" y="59">4</text><text x="90" y="59">4</text><text x="126" y="59">4</text><text x="162" y="59">3</text>
+    <text x="18" y="95">3</text><text x="54" y="95">4</text><text x="90" y="95">4</text><text x="126" y="95">4</text><text x="162" y="95">3</text>
+    <text x="18" y="131">3</text><text x="54" y="131">4</text><text x="90" y="131">4</text><text x="126" y="131">4</text><text x="162" y="131">3</text>
+    <text x="18" y="167">2</text><text x="54" y="167">3</text><text x="90" y="167">3</text><text x="126" y="167">3</text><text x="162" y="167">2</text>
+    </g>
+  </g>
+  <g class="sub" transform="translate(40,222)">
+    <rect x="0" y="-9" width="11" height="9" fill="#f3dcd6" stroke="#22291f" stroke-width="0.6"/><text x="16" y="-1">corner = 2</text>
+    <rect x="86" y="-9" width="11" height="9" fill="#f7eccf" stroke="#22291f" stroke-width="0.6"/><text x="102" y="-1">edge = 3</text>
+    <rect x="158" y="-9" width="11" height="9" fill="#dfe7f4" stroke="#22291f" stroke-width="0.6"/><text x="174" y="-1">interior = 4</text>
+  </g>
+  <!-- right: chain -->
+  <text x="420" y="16" text-anchor="middle" class="lbl" font-weight="600">A connected loaded chain (f&#8329;)</text>
+  <g transform="translate(330,28)">
+    <g stroke="#22291f" stroke-width="1" fill="#fbf6e7">
+      <rect x="0" y="0" width="36" height="36"/><rect x="36" y="0" width="36" height="36"/><rect x="72" y="0" width="36" height="36"/><rect x="108" y="0" width="36" height="36"/><rect x="144" y="0" width="36" height="36"/>
+      <rect x="0" y="36" width="36" height="36"/><rect x="36" y="36" width="36" height="36"/><rect x="72" y="36" width="36" height="36"/><rect x="108" y="36" width="36" height="36"/><rect x="144" y="36" width="36" height="36"/>
+      <rect x="0" y="72" width="36" height="36"/><rect x="36" y="72" width="36" height="36"/><rect x="72" y="72" width="36" height="36"/><rect x="108" y="72" width="36" height="36"/><rect x="144" y="72" width="36" height="36"/>
+      <rect x="0" y="108" width="36" height="36"/><rect x="36" y="108" width="36" height="36"/><rect x="72" y="108" width="36" height="36"/><rect x="108" y="108" width="36" height="36"/><rect x="144" y="108" width="36" height="36"/>
+      <rect x="0" y="144" width="36" height="36"/><rect x="36" y="144" width="36" height="36"/><rect x="72" y="144" width="36" height="36"/><rect x="108" y="144" width="36" height="36"/><rect x="144" y="144" width="36" height="36"/>
+    </g>
+    <!-- highlight a connected set of loaded interior squares -->
+    <rect x="36" y="36" width="36" height="36" fill="#f3dcd6" stroke="#c0392b" stroke-width="2"/>
+    <rect x="72" y="36" width="36" height="36" fill="#f3dcd6" stroke="#c0392b" stroke-width="2"/>
+    <rect x="72" y="72" width="36" height="36" fill="#f3dcd6" stroke="#c0392b" stroke-width="2"/>
+    <rect x="72" y="108" width="36" height="36" fill="#f3dcd6" stroke="#c0392b" stroke-width="2"/>
+    <!-- three red beetles each (capacity 4 -> loaded = 3) shown as dots count, simplified -->
+    <g fill="#c0392b" stroke="#8f2418" stroke-width="0.6">
+      <circle cx="48" cy="48" r="4"/><circle cx="60" cy="48" r="4"/><circle cx="54" cy="60" r="4"/>
+      <circle cx="84" cy="48" r="4"/><circle cx="96" cy="48" r="4"/><circle cx="90" cy="60" r="4"/>
+      <circle cx="84" cy="84" r="4"/><circle cx="96" cy="84" r="4"/><circle cx="90" cy="96" r="4"/>
+      <circle cx="84" cy="120" r="4"/><circle cx="96" cy="120" r="4"/><circle cx="90" cy="132" r="4"/>
+    </g>
+  </g>
+  <text x="420" y="222" text-anchor="middle" class="sub">four red squares, each one beetle from exploding,</text>
+</svg>
+<figcaption><b>Fig. 5</b> Two of the features made concrete. <em>Left:</em> a square&rsquo;s capacity is simply how many neighbours it has, so corners are the most stable real estate (features f&#8325;, f&#8326;). <em>Right:</em> a connected cluster of same-colour <em>loaded</em> squares (feature f&#8329;); igniting any one of them can detonate the whole chain at once, which is why the agent learns to value them.</figcaption>
+</figure>
+</section>
+
+<section id="s6">
+<h2><span class="secnum">6</span>Temporal-difference learning</h2>
+
+<h3 id="s6-1"><span class="secnum">6.1</span>Prediction by bootstrapping</h3>
+<p>We now have a value function but no way to set its weights. The reward only arrives at the end of the game (<a href="#s3">&sect;3</a>), so the obvious approach &mdash; wait for the final result and then nudge every position visited towards that result &mdash; is possible. It is called the <em>Monte-Carlo</em> method, and it works, but it is noisy: a single lucky or unlucky game shifts the estimate for every position in it.</p>
+
+<p><strong>Temporal-difference (TD) learning</strong>, introduced by Sutton in 1988,<sup><a href="#ref3">3</a></sup> does something subtler and is the heart of this system. Instead of waiting for the final outcome, it updates each position&rsquo;s value towards the value of the <em>next</em> position the agent reaches. Each estimate is pulled into agreement with the estimate that follows it &mdash; a process called <em>bootstrapping</em>, because the predictions lift themselves into accuracy by leaning on one another. Only the final move has a ground-truth target (the actual win or loss); that truth then propagates backwards, one link at a time, across many games. TD is the method behind both Samuel&rsquo;s checkers player and TD-Gammon.<sup><a href="#ref4">4</a>,<a href="#ref5">5</a></sup></p>
+
+<figure>
+<svg viewBox="0 0 600 150" class="fsvg" role="img" aria-label="TD bootstrapping across a sequence of afterstates">
+  <defs><marker id="ah4" markerWidth="8" markerHeight="8" refX="6" refY="2.6" orient="auto"><path d="M0,0 L6,2.6 L0,5.2 Z" fill="#9a6612"/></marker></defs>
+  <line x1="30" y1="70" x2="560" y2="70" stroke="#cabf9c" stroke-width="1"/>
+  <g>
+    <circle cx="70"  cy="70" r="11" fill="#fbf6e7" stroke="#22291f" stroke-width="1.4"/>
+    <circle cx="190" cy="70" r="11" fill="#fbf6e7" stroke="#22291f" stroke-width="1.4"/>
+    <circle cx="310" cy="70" r="11" fill="#fbf6e7" stroke="#22291f" stroke-width="1.4"/>
+    <circle cx="430" cy="70" r="11" fill="#fbf6e7" stroke="#22291f" stroke-width="1.4"/>
+    <circle cx="540" cy="70" r="13" fill="#2f6cc9" stroke="#1d4c97" stroke-width="1.6"/>
+    <text x="540" y="74" text-anchor="middle" fill="#fff" font-size="11" font-weight="600">win</text>
+  </g>
+  <g class="sub" text-anchor="middle">
+    <text x="70" y="98">v(a&#8320;)</text><text x="190" y="98">v(a&#8321;)</text><text x="310" y="98">v(a&#8322;)</text><text x="430" y="98">v(a&#8323;)</text><text x="540" y="100">= 1</text>
+  </g>
+  <text x="300" y="24" text-anchor="middle" class="lbl">the mover&rsquo;s own afterstates, one per turn</text>
+  <!-- backward pull arrows -->
+  <path d="M178,55 C150,38 110,38 82,55" fill="none" stroke="#9a6612" stroke-width="1.5" marker-end="url(#ah4)"/>
+  <path d="M298,55 C270,38 230,38 202,55" fill="none" stroke="#9a6612" stroke-width="1.5" marker-end="url(#ah4)"/>
+  <path d="M418,55 C390,38 350,38 322,55" fill="none" stroke="#9a6612" stroke-width="1.5" marker-end="url(#ah4)"/>
+  <path d="M528,55 C500,38 460,38 442,55" fill="none" stroke="#2a4733" stroke-width="1.7" marker-end="url(#ah4)"/>
+  <text x="300" y="132" text-anchor="middle" class="sub" fill="#9a6612">each estimate is nudged toward the next &mdash; truth (win = 1) flows backward over many games</text>
+</svg>
+<figcaption><b>Fig. 6</b> Bootstrapping. The agent&rsquo;s value for its afterstate at turn <em>t</em> is adjusted towards its value at turn <em>t</em>+1. The only hard target is the terminal one (1 for the winner, 0 for the loser); repeated play diffuses that signal back through the chain so that earlier positions inherit accurate values.</figcaption>
+</figure>
+
+<h3 id="s6-2"><span class="secnum">6.2</span>The TD(0) update rule</h3>
+<p>Let <span class="term">a<sub>t</sub></span> be the afterstate the mover produced on its previous turn and <span class="term">a<sub>t+1</sub></span> the afterstate it produces on its current turn. The one-step temporal-difference, or <em>TD(0)</em>, update is:</p>
+
+<div class="eq"><span class="v">&delta;</span> <span class="op">=</span> v(a<sub>t+1</sub>) <span class="op">&minus;</span> v(a<sub>t</sub>)<span class="op">,</span> &nbsp;&nbsp; <span class="v">w</span> <span class="op">&larr;</span> <span class="v">w</span> <span class="op">+</span> &alpha; &middot; &delta; &middot; &nabla;<sub>w</sub> v(a<sub>t</sub>)<span class="eqn">&delta; is the TD error; &alpha; is the learning rate (step size)</span></div>
+
+<p>The <em>TD error</em> <span class="term">&delta;</span> measures surprise: how much the new estimate differs from the old one. If things turned out better than the previous afterstate predicted, <span class="term">&delta;</span> is positive and we shift the weights to raise <span class="term">v(a<sub>t</sub>)</span> next time; if worse, we lower it. The learning rate <span class="term">&alpha;</span> (default <code>0.08</code>) controls how big each nudge is. The factor <span class="term">&nabla;<sub>w</sub> v</span> is the gradient &mdash; the direction in weight-space that most increases the value &mdash; derived next.</p>
+
+<h3 id="s6-3"><span class="secnum">6.3</span>Gradient of the logistic value</h3>
+<p>Because <span class="term">v = &sigma;(w &middot; f)</span> and the logistic function has the tidy derivative <span class="term">&sigma;&prime;(z) = &sigma;(z)(1&minus;&sigma;(z))</span>, the chain rule gives a gradient that is just the feature vector scaled by a single number:</p>
+
+<div class="eq">&nabla;<sub>w</sub> v <span class="op">=</span> v &middot; (1 &minus; v) &middot; <span class="v">f</span><span class="eqn">the &ldquo;confidence&rdquo; factor v(1&minus;v) is largest at v = 0.5</span></div>
+
+<p>Substituting back, each weight is updated by</p>
+<div class="eq">w<sub>i</sub> <span class="op">&larr;</span> w<sub>i</sub> <span class="op">+</span> &alpha; &middot; &bigl[ target &minus; v(a<sub>t</sub>) &bigr] &middot; v(a<sub>t</sub>)(1 &minus; v(a<sub>t</sub>)) &middot; f<sub>i</sub>(a<sub>t</sub>)<span class="eqn">this is exactly the code in the implementation&rsquo;s <code>tdUpdate</code></span></div>
+
+<p>The <span class="term">v(1&minus;v)</span> term is quietly important. It is near zero when the model is already confident (<span class="term">v</span> close to 0 or 1) and maximal when the model is unsure (<span class="term">v</span> near 0.5). Learning therefore concentrates on genuinely uncertain positions and barely disturbs settled ones &mdash; a built-in form of stability that comes for free from the logistic choice in <a href="#s5-2">&sect;5.2</a>.<sup><a href="#ref9">9</a></sup></p>
+
+<div class="callout"><span class="ct">Implementation note</span>
+In code, <code>target</code> is the value of the next afterstate, <code>v(a<sub>t+1</sub>)</code>, while the game is in progress, and is replaced by the true terminal value when the game ends (next section). The previous afterstate&rsquo;s features <code>f(a<sub>t</sub>)</code> are cached per player between their turns.</div>
+
+<h3 id="s6-4"><span class="secnum">6.4</span>Rewards &amp; terminal targets</h3>
+<p>When a game ends, the bootstrap target is replaced by the real outcome &mdash; this is the only ground truth in the whole process:</p>
+<ul>
+  <li>the <strong>winner&rsquo;s</strong> last afterstate is updated towards <strong>1</strong>;</li>
+  <li>the <strong>loser&rsquo;s</strong> last afterstate is updated towards <strong>0</strong>;</li>
+  <li>if a game hits the move cap without resolving (a rare near-stalemate), both final afterstates are updated towards <strong>0.5</strong>, treating it as a draw.</li>
+</ul>
+<p>Because both seats are the same agent (<a href="#s7">&sect;7</a>), every game produces two learning trajectories &mdash; a winning one ending in 1 and a losing one ending in 0 &mdash; so each self-play game teaches the agent about both success and failure simultaneously.</p>
+</section>
+
+<section id="s7">
+<h2><span class="secnum">7</span>Self-play</h2>
+
+<p>The agent has no opponent to learn from, so it becomes its own. A <strong>single weight vector</strong> plays both seats: on red&rsquo;s turn it chooses red&rsquo;s move and evaluates positions from red&rsquo;s perspective; on blue&rsquo;s turn it does the same for blue. Because every feature is computed relative to whoever is moving (<a href="#s5-3">&sect;5.3</a>), the very same weights express &ldquo;good for me&rdquo; for both colours without modification.</p>
+
+<figure>
+<svg viewBox="0 0 540 175" class="fsvg" role="img" aria-label="One weight vector drives both players in self-play">
+  <defs><marker id="ah5" markerWidth="8" markerHeight="8" refX="6" refY="2.6" orient="auto"><path d="M0,0 L6,2.6 L0,5.2 Z" fill="#5d6650"/></marker></defs>
+  <rect x="200" y="14" width="140" height="46" rx="9" fill="#f0e7cd" stroke="#2a4733" stroke-width="1.6"/>
+  <text x="270" y="34" text-anchor="middle" class="lbl" font-weight="600">one brain</text>
+  <text x="270" y="50" text-anchor="middle" class="sub">weights w</text>
+  <circle cx="120" cy="120" r="26" fill="#f3dcd6" stroke="#c0392b" stroke-width="2"/>
+  <text x="120" y="116" text-anchor="middle" class="sub" fill="#8f2418" font-weight="600">RED</text>
+  <text x="120" y="130" text-anchor="middle" class="sub" fill="#8f2418">seat</text>
+  <circle cx="420" cy="120" r="26" fill="#dfe7f4" stroke="#2f6cc9" stroke-width="2"/>
+  <text x="420" y="116" text-anchor="middle" class="sub" fill="#1d4c97" font-weight="600">BLUE</text>
+  <text x="420" y="130" text-anchor="middle" class="sub" fill="#1d4c97">seat</text>
+  <path d="M232,56 C190,78 150,84 128,96" fill="none" stroke="#5d6650" stroke-width="1.4" marker-end="url(#ah5)"/>
+  <path d="M308,56 C350,78 390,84 412,96" fill="none" stroke="#5d6650" stroke-width="1.4" marker-end="url(#ah5)"/>
+  <path d="M148,128 C240,150 300,150 392,128" fill="none" stroke="#9a6612" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#ah5)"/>
+  <text x="270" y="168" text-anchor="middle" class="sub" fill="#9a6612">they alternate moves; both trajectories update the same w</text>
+</svg>
+<figcaption><b>Fig. 7</b> Self-play with shared weights. The two seats are not two agents but one agent viewing the board from opposite ends. Each completed game yields a winning and a losing trajectory, both of which adjust the single weight vector.</figcaption>
+</figure>
+
+<p>Self-play is what lets the system bootstrap competence from nothing: as the weights improve, the quality of the opponent improves in lockstep, so the agent always faces a roughly equal adversary and is continually pushed to get better. This co-evolution is the same mechanism that, scaled up with deep networks and tree search, produced TD-Gammon<sup><a href="#ref5">5</a></sup> and later AlphaGo Zero and AlphaZero.<sup><a href="#ref12">12</a>,<a href="#ref13">13</a></sup> Its known risk is that a self-player can fixate on beating its own habits and develop blind spots an outside opponent would punish; the exploration of the next section is the main defence, and evaluation against an independent baseline (<a href="#s11">&sect;11</a>) is how we detect the problem.</p>
+</section>
+
+<section id="s8">
+<h2><span class="secnum">8</span>Exploration vs exploitation</h2>
+
+<p>If the agent always played the move its current weights rank highest, it would keep replaying the same games and never discover that a move it currently underrates is actually strong. This is the classic <strong>exploration&ndash;exploitation dilemma</strong>.<sup><a href="#ref2">2</a></sup> The standard remedy is an <strong>&epsilon;-greedy</strong> policy: with probability <span class="term">1&minus;&epsilon;</span> take the best-looking move (exploit), and with probability <span class="term">&epsilon;</span> take a random legal move (explore).</p>
+
+<p>We use a <em>decaying</em> schedule. Early in training the agent should experiment widely; later, once its judgement is worth trusting, it should mostly exploit so its value estimates converge on strong play. <span class="term">&epsilon;</span> therefore falls linearly from <code>0.30</code> at the first game to <code>0.04</code> at the last, held constant within each individual game.</p>
+
+<figure>
+<svg viewBox="0 0 500 150" class="fsvg" role="img" aria-label="Epsilon decays linearly across training">
+  <line x1="50" y1="120" x2="470" y2="120" stroke="#cabf9c" stroke-width="1"/>
+  <line x1="50" y1="20" x2="50" y2="120" stroke="#cabf9c" stroke-width="1"/>
+  <text x="44" y="34" text-anchor="end" class="sub">0.30</text>
+  <text x="44" y="118" text-anchor="end" class="sub">0.04</text>
+  <text x="50" y="138" text-anchor="middle" class="sub">game 1</text>
+  <text x="470" y="138" text-anchor="middle" class="sub">last game</text>
+  <line x1="50" y1="30" x2="470" y2="113" stroke="#9a6612" stroke-width="2.4"/>
+  <circle cx="50" cy="30" r="3.5" fill="#9a6612"/><circle cx="470" cy="113" r="3.5" fill="#9a6612"/>
+  <text x="250" y="58" text-anchor="middle" class="sub" fill="#9a6612">explore a lot &rarr; trust learned judgement</text>
+</svg>
+<figcaption><b>Fig. 8</b> The exploration schedule. A high initial &epsilon; ensures the agent samples diverse openings and tactics while its weights are still meaningless; the linear decay then lets it settle into confident, near-greedy play as those weights mature.</figcaption>
+</figure>
+</section>
+
+<section id="s9">
+<h2><span class="secnum">9</span>The training loop</h2>
+<p>The pieces assemble into one compact loop. For each self-play game the agent alternates seats, and on every move it (1) chooses an afterstate &epsilon;-greedily, (2) applies the TD update to its <em>previous</em> afterstate using the chosen one as the bootstrap target, then (3) commits the move. At game end it applies the terminal targets of <a href="#s6-4">&sect;6.4</a>.</p>
+
+<pre><span class="c"># one self-play game (afterstate TD(0))</span>
+state &larr; empty board;  prev[red] &larr; prev[blue] &larr; none
+<span class="k">while</span> game not over and moves &lt; cap:
+    p &larr; player to move
+    <span class="c"># evaluate every legal move's resulting afterstate, pick eps-greedily</span>
+    choice &larr; <span class="k">choose_move</span>(state, p, w, eps)     <span class="c"># value = sigma(w&middot;f) , or 1 if it wins</span>
+    <span class="k">if</span> prev[p] exists:
+        <span class="k">td_update</span>(w, prev[p].features, target=choice.value, alpha)
+    state &larr; choice.afterstate;  prev[p] &larr; choice
+    <span class="k">if</span> choice wins:
+        <span class="k">td_update</span>(w, prev[winner].features, target=1, alpha)
+        <span class="k">td_update</span>(w, prev[loser].features,  target=0, alpha)
+        <span class="k">break</span>
+<span class="c"># draw (hit move cap): nudge both last afterstates toward 0.5</span>
+
+<span class="c"># whole training run</span>
+<span class="k">for</span> g <span class="k">in</span> 1 .. G:
+    eps &larr; linear_decay(0.30 &rarr; 0.04, g, G)
+    play one self-play game
+    <span class="k">if</span> checkpoint(g): evaluate vs random, record win-rate
+</pre>
+
+<figure>
+<svg viewBox="0 0 320 360" class="fsvg" role="img" aria-label="Training loop flowchart">
+  <defs><marker id="ah6" markerWidth="8" markerHeight="8" refX="6" refY="2.6" orient="auto"><path d="M0,0 L6,2.6 L0,5.2 Z" fill="#22291f"/></marker></defs>
+  <rect x="90" y="14" width="140" height="34" rx="17" fill="#f0e7cd" stroke="#22291f" stroke-width="1.3"/>
+  <text x="160" y="35" text-anchor="middle" class="sub">new self-play game</text>
+  <rect x="60" y="74" width="200" height="40" rx="8" fill="#fbf6e7" stroke="#22291f" stroke-width="1.3"/>
+  <text x="160" y="90" text-anchor="middle" class="sub">choose move &epsilon;-greedily</text>
+  <text x="160" y="104" text-anchor="middle" class="sub">over afterstate values</text>
+  <rect x="60" y="128" width="200" height="40" rx="8" fill="#fbf6e7" stroke="#22291f" stroke-width="1.3"/>
+  <text x="160" y="144" text-anchor="middle" class="sub">TD-update previous</text>
+  <text x="160" y="158" text-anchor="middle" class="sub">afterstate toward this one</text>
+  <rect x="60" y="182" width="200" height="34" rx="8" fill="#fbf6e7" stroke="#22291f" stroke-width="1.3"/>
+  <text x="160" y="203" text-anchor="middle" class="sub">apply move + cascade</text>
+  <polygon points="160,232 250,266 160,300 70,266" fill="#f0e7cd" stroke="#2a4733" stroke-width="1.4"/>
+  <text x="160" y="263" text-anchor="middle" class="sub">someone</text>
+  <text x="160" y="277" text-anchor="middle" class="sub">won?</text>
+  <rect x="60" y="318" width="200" height="34" rx="8" fill="#dfe7f4" stroke="#1d4c97" stroke-width="1.4"/>
+  <text x="160" y="339" text-anchor="middle" class="sub" fill="#1d4c97">terminal updates &rarr; next game</text>
+  <line x1="160" y1="48" x2="160" y2="74" stroke="#22291f" stroke-width="1.2" marker-end="url(#ah6)"/>
+  <line x1="160" y1="114" x2="160" y2="128" stroke="#22291f" stroke-width="1.2" marker-end="url(#ah6)"/>
+  <line x1="160" y1="168" x2="160" y2="182" stroke="#22291f" stroke-width="1.2" marker-end="url(#ah6)"/>
+  <line x1="160" y1="216" x2="160" y2="232" stroke="#22291f" stroke-width="1.2" marker-end="url(#ah6)"/>
+  <line x1="160" y1="300" x2="160" y2="318" stroke="#2a4733" stroke-width="1.3" marker-end="url(#ah6)"/>
+  <text x="166" y="312" class="sub" fill="#2a4733">yes</text>
+  <path d="M70,266 C20,266 20,91 58,91" fill="none" stroke="#9a6612" stroke-width="1.3" marker-end="url(#ah6)"/>
+  <text x="14" y="180" class="sub" fill="#9a6612" transform="rotate(-90 14 180)">no &mdash; swap player, loop</text>
+</svg>
+<figcaption><b>Fig. 9</b> The per-move cycle. Note the ordering: the TD update for a player happens on that player&rsquo;s <em>next</em> turn, using the freshly chosen afterstate as the target. The loop is deliberately tiny &mdash; thousands of games run in a second or two in a single browser thread.</figcaption>
+</figure>
+</section>
+
+<section id="s10">
+<h2><span class="secnum">10</span>Playing a move</h2>
+<p>Move selection during a real game against a human is the same routine used in training, with exploration switched off (<span class="term">&epsilon; = 0</span>). The agent enumerates its legal moves, simulates each one &mdash; placement plus full cascade &mdash; to the afterstate it yields, scores every afterstate with the learned value function, and plays the highest. A move that wins immediately is assigned value 1 so it is always taken. Ties are broken at random, which keeps repeated games from being identical. This is a <strong>one-ply greedy search guided by a learned evaluation</strong> &mdash; structurally identical to the original engine&rsquo;s move selection, but with discovered weights in place of hand-set ones.<sup><a href="#ref1">1</a></sup></p>
+
+<div class="callout"><span class="ct">Why one ply is enough here</span>
+Deeper search would help, but because the value function already estimates the eventual outcome of a position, one ply of real lookahead plus a good evaluation captures most of the benefit at a fraction of the cost &mdash; the same bargain Samuel and Tesauro struck.<sup><a href="#ref4">4</a>,<a href="#ref5">5</a></sup> Extending the search depth is listed as a future option in <a href="#s14">&sect;14</a>.</div>
+</section>
+
+<section id="s11">
+<h2><span class="secnum">11</span>Evaluation &amp; instrumentation</h2>
+<p>Self-play win-rates are meaningless as a progress measure &mdash; the agent always wins exactly half its games against itself. Strength is therefore measured against an <strong>independent, fixed baseline</strong>: a player that moves uniformly at random. At regular checkpoints during training, the current weights play a batch of games versus this random player (alternating who moves first, scoring a draw as &frac12;), and the win-rate is recorded.</p>
+
+<figure>
+<svg viewBox="0 0 520 185" class="fsvg" role="img" aria-label="Measured win-rate versus a random player during training">
+  <line x1="52" y1="20" x2="52" y2="150" stroke="#cabf9c" stroke-width="1"/>
+  <line x1="52" y1="150" x2="478" y2="150" stroke="#cabf9c" stroke-width="1"/>
+  <line x1="52" y1="20" x2="478" y2="20" stroke="#e6dcc0" stroke-width="1" stroke-dasharray="3 3"/>
+  <line x1="52" y1="85" x2="478" y2="85" stroke="#e6dcc0" stroke-width="1" stroke-dasharray="3 3"/>
+  <text x="46" y="24" text-anchor="end" class="sub">100%</text>
+  <text x="46" y="89" text-anchor="end" class="sub">75%</text>
+  <text x="46" y="153" text-anchor="end" class="sub">50%</text>
+  <text x="52" y="170" text-anchor="middle" class="sub">0</text>
+  <text x="261" y="170" text-anchor="middle" class="sub">1500 games</text>
+  <text x="469" y="170" text-anchor="middle" class="sub">3000</text>
+  <!-- baseline marker ~83% -->
+  <line x1="52" y1="63.3" x2="478" y2="63.3" stroke="#c0392b" stroke-width="1" stroke-dasharray="5 3"/>
+  <text x="474" y="59" text-anchor="end" class="sub" fill="#c0392b">untrained &asymp; 83%</text>
+  <path d="M52.0,63.3 L81.8,28.7 L111.6,26.5 L141.5,30.8 L171.3,39.5 L201.1,37.3 L230.9,28.7 L260.7,33.0 L290.5,26.5 L320.4,28.7 L350.2,35.2 L380.0,35.2 L409.8,26.5 L439.6,37.3 L469.4,33.0" fill="none" stroke="#9a6612" stroke-width="2.2"/>
+  <g fill="#9a6612">
+    <circle cx="52" cy="63.3" r="2.6"/><circle cx="81.8" cy="28.7" r="2.6"/><circle cx="111.6" cy="26.5" r="2.6"/><circle cx="141.5" cy="30.8" r="2.6"/><circle cx="171.3" cy="39.5" r="2.6"/><circle cx="201.1" cy="37.3" r="2.6"/><circle cx="230.9" cy="28.7" r="2.6"/><circle cx="260.7" cy="33" r="2.6"/><circle cx="290.5" cy="26.5" r="2.6"/><circle cx="320.4" cy="28.7" r="2.6"/><circle cx="350.2" cy="35.2" r="2.6"/><circle cx="380" cy="35.2" r="2.6"/><circle cx="409.8" cy="26.5" r="2.6"/><circle cx="439.6" cy="37.3" r="2.6"/><circle cx="469.4" cy="33" r="2.6"/>
+  </g>
+</svg>
+<figcaption><b>Fig. 10</b> A real training run on a 5&times;5 board (3000 games), win-rate versus a random opponent at each checkpoint. The agent jumps to ~95&ndash;97% within the first few hundred games and then holds there. The dashed red line is the <em>untrained</em> baseline: even with all weights zero the agent already wins ~83%, purely because a winning move is hard-coded to value 1, so it never declines a win on offer. Learning adds the remaining margin by valuing positions that <em>lead</em> to wins.</figcaption>
+</figure>
+
+<p>The second instrument is the weight vector itself, displayed live as a signed bar chart. Because the model is linear, every weight is directly interpretable as &ldquo;how much this feature counts, and in which direction.&rdquo; A typical trained brain on 5&times;5 looks like this:</p>
+
+<figure>
+<svg viewBox="0 0 540 290" class="fsvg" role="img" aria-label="Learned weights after training">
+  <line x1="270" y1="14" x2="270" y2="270" stroke="#22291f" stroke-width="1.2"/>
+  <text x="270" y="286" text-anchor="middle" class="sub">0</text>
+  <text x="160" y="286" text-anchor="middle" class="sub" fill="#c0392b">&minus; discourages</text>
+  <text x="390" y="286" text-anchor="middle" class="sub" fill="#2a4733">+ encourages</text>
+  <!-- scale: maxabs 1.136 -> 210px -->
+  <g font-size="11">
+    <!-- rows: label at far left, bar from center -->
+    <!-- f0 0.152 -->
+    <text x="6" y="29" class="sub">Baseline</text>
+    <rect x="270" y="20" width="28" height="13" fill="#7d9a86"/>
+    <!-- f1 0.595 -->
+    <text x="6" y="52" class="sub">Beetle advantage</text>
+    <rect x="270" y="43" width="110" height="13" fill="#2a4733"/>
+    <!-- f2 -0.024 -->
+    <text x="6" y="75" class="sub">Territory</text>
+    <rect x="266" y="66" width="4" height="13" fill="#c0392b"/>
+    <!-- f3 -0.104 -->
+    <text x="6" y="98" class="sub">Own loaded squares</text>
+    <rect x="251" y="89" width="19" height="13" fill="#c0392b"/>
+    <!-- f4 -0.416 -->
+    <text x="6" y="121" class="sub">Their loaded squares</text>
+    <rect x="193" y="112" width="77" height="13" fill="#c0392b"/>
+    <!-- f5 0.802 -->
+    <text x="6" y="144" class="sub">Corner control</text>
+    <rect x="270" y="135" width="148" height="13" fill="#2a4733"/>
+    <!-- f6 0.577 -->
+    <text x="6" y="167" class="sub">Edge control</text>
+    <rect x="270" y="158" width="107" height="13" fill="#2a4733"/>
+    <!-- f7 -1.136 -->
+    <text x="6" y="190" class="sub">Own exposure</text>
+    <rect x="60" y="181" width="210" height="13" fill="#c0392b"/>
+    <!-- f8 -0.248 -->
+    <text x="6" y="213" class="sub">Pressure on them</text>
+    <rect x="224" y="204" width="46" height="13" fill="#c0392b"/>
+    <!-- f9 -0.409 -->
+    <text x="6" y="236" class="sub">Chain potential</text>
+    <rect x="194" y="227" width="76" height="13" fill="#c0392b"/>
+  </g>
+</svg>
+<figcaption><b>Fig. 11</b> Learned weights from the same run as Fig. 10. The agent independently rediscovered the textbook Chain-Reaction heuristics<sup><a href="#ref14">14</a></sup>: <em>corners and edges are valuable</em> (strong positive), <em>material helps</em> (positive), and above all <em>do not park your beetles next to an enemy square that is one move from exploding</em> &mdash; &ldquo;own exposure&rdquo; is by far the most negative weight. No one told it any of this; it inferred it from wins and losses. Run-to-run the exact numbers vary, but this qualitative shape is consistent.</figcaption>
+</figure>
+</section>
+
+<section id="s12">
+<h2><span class="secnum">12</span>Generalisation across board sizes</h2>
+<p>Every feature is normalised by a board-size quantity &mdash; the number of squares <span class="term">n&sup2;</span>, the four corners, or the <span class="term">4(n&minus;2)</span> edge squares (<a href="#s5-3">&sect;5.3</a>). As a result the feature vector for a given <em>kind</em> of position has a similar magnitude regardless of <span class="term">n</span>, and a weight vector trained on one board carries over to another. Empirically, a brain trained only on 5&times;5 plays a 7&times;7 board against a random opponent at a similar high win-rate. It is strongest on the size it practised &mdash; some tactics are scale-specific &mdash; but it is never lost on an unfamiliar board. This is a small instance of the broader point that good feature design, not raw capacity, is what makes a linear model transfer.</p>
+</section>
+
+<section id="s13">
+<h2><span class="secnum">13</span>Persistence: saving a brain</h2>
+<p>A trained agent is nothing more than its ten weights plus a little bookkeeping, so it serialises to a tiny JSON object (under a kilobyte):</p>
+<pre>{
+  <span class="s">"app"</span>: <span class="s">"beetle-battle-rl"</span>, <span class="s">"version"</span>: 1,
+  <span class="s">"features"</span>: [<span class="s">"Baseline"</span>, <span class="s">"Beetle advantage"</span>, &hellip;],
+  <span class="s">"weights"</span>: [0.152, 0.595, &hellip;],   <span class="c"># the entire learned strategy</span>
+  <span class="s">"trained"</span>: 3000,                  <span class="c"># games of experience</span>
+  <span class="s">"points"</span>: [ &hellip; ]                  <span class="c"># win-rate history for the chart</span>
+}</pre>
+<p>This can be exported to a file the user keeps and re-imported later, with the restored agent playing bit-for-bit identically (the JSON number format round-trips IEEE-754 doubles exactly). Where the host environment offers cross-session storage, a one-click quick-save/quick-load uses the same object. Carrying the <code>features</code> list and a <code>version</code> field alongside the weights lets a loader sanity-check that a file really is a Beetle Battle brain before trusting it.</p>
+</section>
+
+<section id="s14">
+<h2><span class="secnum">14</span>Limitations &amp; extensions</h2>
+<p>This design intentionally sits at the simple end of the reinforcement-learning spectrum. Its limits, and the natural next steps, are:</p>
+<ul>
+  <li><strong>Linear ceiling.</strong> A linear model cannot capture interactions between features (e.g. &ldquo;a corner is only valuable <em>if</em> a chain backs it up&rdquo;). Replacing the weighted sum with a small neural network &mdash; the TD-Gammon move<sup><a href="#ref5">5</a></sup> &mdash; would lift this ceiling at the cost of training time and interpretability.</li>
+  <li><strong>One-step credit assignment.</strong> TD(0) propagates outcome information one link per game. <em>Eligibility traces</em> &mdash; TD(&lambda;)<sup><a href="#ref3">3</a></sup> &mdash; would credit longer runs of moves at once and typically speed learning.</li>
+  <li><strong>Shallow search.</strong> One-ply lookahead is cheap but tactically short-sighted. A few plies of minimax or a Monte-Carlo tree search over the same learned value &mdash; the AlphaZero recipe<sup><a href="#ref13">13</a></sup> &mdash; would sharpen play considerably.</li>
+  <li><strong>Hand-built features.</strong> The ten features are human-designed; a deep network learning directly from the raw board (as in DQN for Atari<sup><a href="#ref10">10</a></sup> and AlphaGo for Go<sup><a href="#ref11">11</a></sup>) removes that bottleneck but discards the legibility that is a goal here.</li>
+  <li><strong>Self-play blind spots.</strong> As noted in <a href="#s7">&sect;7</a>, an agent that only ever faces itself can develop exploitable habits; periodic evaluation against varied opponents, or a league of past versions, would harden it.</li>
+</ul>
+<p>None of these are needed for the stated goal &mdash; a fast, transparent agent that learns to play Beetle Battle well from zero knowledge &mdash; but each is a clearly marked road onward.</p>
+</section>
+
+<section id="glossary">
+<h2><span class="secnum">&sect;</span>Glossary</h2>
+<table class="tbl">
+  <tbody>
+    <tr><td><strong>Afterstate</strong></td><td>The board immediately after a move and its cascade resolve, before the opponent replies. What the agent learns to value.</td></tr>
+    <tr><td><strong>Bootstrapping</strong></td><td>Updating an estimate toward another estimate rather than toward observed ground truth.</td></tr>
+    <tr><td><strong>&epsilon;-greedy</strong></td><td>A policy that exploits the best-known move with probability 1&minus;&epsilon; and explores randomly with probability &epsilon;.</td></tr>
+    <tr><td><strong>Feature</strong></td><td>One interpretable number summarising a property of the board (e.g. corner control).</td></tr>
+    <tr><td><strong>Learning rate (&alpha;)</strong></td><td>Step size controlling how strongly each update moves the weights.</td></tr>
+    <tr><td><strong>Loaded / critical square</strong></td><td>A square holding one beetle fewer than its capacity &mdash; one placement from exploding.</td></tr>
+    <tr><td><strong>MDP</strong></td><td>Markov decision process: the state&ndash;action&ndash;reward formalism underlying reinforcement learning.</td></tr>
+    <tr><td><strong>Sigmoid (logistic)</strong></td><td>The function &sigma;(z)=1/(1+e<sup>&minus;z</sup>) mapping any real number into (0,1).</td></tr>
+    <tr><td><strong>TD error (&delta;)</strong></td><td>The difference between successive value estimates; the signal that drives each update.</td></tr>
+    <tr><td><strong>Value function</strong></td><td>A map from board to estimated probability that the mover eventually wins.</td></tr>
+  </tbody>
+</table>
+</section>
+
+<section id="refs">
+<h2><span class="secnum">&sect;</span>References &amp; further reading</h2>
+<ol class="refs">
+  <li id="ref1">F. Dijkstra. <em>Beetle Battle</em> (source, manual, and original heuristic engine). <span class="src">GitHub: <a href="https://github.com/computerguided/beetle-battle">computerguided/beetle-battle</a>.</span></li>
+  <li id="ref2">R. S. Sutton &amp; A. G. Barto. <em>Reinforcement Learning: An Introduction</em>, 2nd ed. MIT Press, 2018. <span class="src">See Ch. 6 (temporal-difference learning) and the section on games and afterstates.</span></li>
+  <li id="ref3">R. S. Sutton. &ldquo;Learning to Predict by the Methods of Temporal Differences.&rdquo; <em>Machine Learning</em>, 3:9&ndash;44, 1988. <span class="src">The original TD(&lambda;) paper.</span></li>
+  <li id="ref4">A. L. Samuel. &ldquo;Some Studies in Machine Learning Using the Game of Checkers.&rdquo; <em>IBM Journal of Research and Development</em>, 3(3):210&ndash;229, 1959. <span class="src">Self-play with a learned evaluation function &mdash; the ancestor of this method.</span></li>
+  <li id="ref5">G. Tesauro. &ldquo;Temporal Difference Learning and TD-Gammon.&rdquo; <em>Communications of the ACM</em>, 38(3):58&ndash;68, 1995. <span class="src">Self-play TD with a neural network reaches master-level backgammon.</span></li>
+  <li id="ref6">R. Bellman. <em>Dynamic Programming.</em> Princeton University Press, 1957. <span class="src">Source of the &ldquo;curse of dimensionality&rdquo; and the value-function viewpoint.</span></li>
+  <li id="ref7">C. E. Shannon. &ldquo;Programming a Computer for Playing Chess.&rdquo; <em>Philosophical Magazine</em>, 41(314):256&ndash;275, 1950. <span class="src">Foundational analysis of game-tree branching factors.</span></li>
+  <li id="ref8">C. J. C. H. Watkins &amp; P. Dayan. &ldquo;Q-learning.&rdquo; <em>Machine Learning</em>, 8:279&ndash;292, 1992. <span class="src">The action-value alternative contrasted with afterstates in &sect;4.</span></li>
+  <li id="ref9">C. M. Bishop. <em>Pattern Recognition and Machine Learning.</em> Springer, 2006. <span class="src">Logistic/sigmoid functions and their gradients (logistic regression).</span></li>
+  <li id="ref10">V. Mnih et&nbsp;al. &ldquo;Human-level control through deep reinforcement learning.&rdquo; <em>Nature</em>, 518:529&ndash;533, 2015. <span class="src">Deep Q-Networks; learning from raw input.</span></li>
+  <li id="ref11">D. Silver et&nbsp;al. &ldquo;Mastering the game of Go with deep neural networks and tree search.&rdquo; <em>Nature</em>, 529:484&ndash;489, 2016. <span class="src">AlphaGo.</span></li>
+  <li id="ref12">D. Silver et&nbsp;al. &ldquo;Mastering the game of Go without human knowledge.&rdquo; <em>Nature</em>, 550:354&ndash;359, 2017. <span class="src">AlphaGo Zero &mdash; pure self-play from random initialisation.</span></li>
+  <li id="ref13">D. Silver et&nbsp;al. &ldquo;A general reinforcement learning algorithm that masters chess, shogi, and Go through self-play.&rdquo; <em>Science</em>, 362:1140&ndash;1144, 2018. <span class="src">AlphaZero &mdash; self-play value learning plus tree search.</span></li>
+  <li id="ref14">Chain Reaction (game) &mdash; heuristic strategy notes. <span class="src">brilliant.org wiki, <a href="https://brilliant.org/wiki/chain-reaction-game/">brilliant.org/wiki/chain-reaction-game</a>; related implementation: <a href="https://github.com/Agnishom/ChainReactionAI">Agnishom/ChainReactionAI</a>. Cited in the original manual.<sup><a href="#ref1">1</a></sup></span></li>
+</ol>
+</section>
+
+</main>
+</div>
+
+<footer>
+  <div class="inner">
+    Beetle Battle &mdash; Learning Edition · design document v1.0 · June 2026. A learning-lab companion to <a href="https://github.com/computerguided/beetle-battle">computerguided/beetle-battle</a> by Fred Dijkstra. Figures generated from a real 3000-game training run on a 5&times;5 board.
+  </div>
+</footer>
+
+<script>
+(function(){
+  // Active-section highlighting in the TOC (wiki behaviour).
+  var links = Array.prototype.slice.call(document.querySelectorAll('nav.toc a'));
+  var map = {};
+  links.forEach(function(a){
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) map[id] = a;
+  });
+  var ids = Object.keys(map);
+  if ('IntersectionObserver' in window && ids.length){
+    var visible = {};
+    var obs = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){ visible[e.target.id] = e.isIntersecting ? e.intersectionRatio : 0; });
+      var bestId = null, best = -1;
+      ids.forEach(function(id){
+        var el = document.getElementById(id);
+        var r = visible[id] || 0;
+        if (r > best){ best = r; bestId = id; }
+      });
+      if (bestId){
+        links.forEach(function(a){ a.classList.remove('active'); });
+        if (map[bestId]) map[bestId].classList.add('active');
+      }
+    }, {rootMargin:'-10% 0px -70% 0px', threshold:[0,0.25,0.5,1]});
+    ids.forEach(function(id){ var el = document.getElementById(id); if (el) obs.observe(el); });
+  }
+  // Mobile TOC toggle.
+  var toggle = document.getElementById('tocToggle');
+  var toc = document.getElementById('toc');
+  if (toggle){
+    toggle.addEventListener('click', function(){
+      var collapsed = toc.classList.toggle('collapsed');
+      toggle.setAttribute('aria-expanded', String(!collapsed));
+      toggle.textContent = collapsed ? 'Contents ▸' : 'Contents ▾';
+    });
+    // collapse by default on small screens
+    if (window.matchMedia('(max-width:880px)').matches){
+      toc.classList.add('collapsed');
+      toggle.setAttribute('aria-expanded','false');
+      toggle.textContent = 'Contents ▸';
+    }
+    // close after picking a link on mobile
+    links.forEach(function(a){
+      a.addEventListener('click', function(){
+        if (window.matchMedia('(max-width:880px)').matches){
+          toc.classList.add('collapsed');
+          toggle.setAttribute('aria-expanded','false');
+          toggle.textContent = 'Contents ▸';
+        }
+      });
+    });
+  }
+})();
+</script>
+</body>
+</html>
